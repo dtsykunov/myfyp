@@ -1,11 +1,11 @@
 # Cloudflare Worker (Python)
 
-This Worker target reuses Python logic from `api/src/for_us_api`.
+This Worker target contains a deployable shared runtime package in `src/for_us_shared`.
 
-Current reuse:
-- Pydantic payload models (`for_us_api.models`)
-- ETag/cache helpers (`for_us_api.http_cache`)
-- HTML rendering (`for_us_api.rendering`)
+Shared runtime modules:
+- Pydantic payload models (`for_us_shared.models`)
+- ETag/cache helpers (`for_us_shared.http_cache`)
+- HTML rendering (`for_us_shared.rendering`)
 
 Adapter-specific code in this folder:
 - Cloudflare request/response entrypoint (`src/entry.py`)

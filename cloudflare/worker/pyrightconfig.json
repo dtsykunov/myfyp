@@ -2,5 +2,5 @@
   "pythonVersion": "3.13",
   "typeCheckingMode": "strict",
   "include": ["src", "tests"],
-  "extraPaths": ["src", "../../api/src"]
+  "extraPaths": ["src"]
 }

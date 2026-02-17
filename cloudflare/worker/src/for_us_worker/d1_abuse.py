@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 import hashlib
 from typing import cast
 
-from for_us_api.abuse import AbuseConfig
+from for_us_shared.abuse import AbuseConfig
 
 from for_us_worker.types import WorkerEnv
 

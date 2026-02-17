@@ -7,7 +7,9 @@ name = "for-us-worker"
 version = "0.1.0"
 description = "Cloudflare Python Worker adapter for For Us Page"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+  "pydantic>=2.12,<3.0",
+]
 
 [project.optional-dependencies]
 dev = [

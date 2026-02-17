@@ -8,7 +8,7 @@ import secrets
 import string
 from typing import cast
 
-from for_us_api.models import CreateSnapshotRequest, StoredSnapshot
+from for_us_shared.models import CreateSnapshotRequest, StoredSnapshot
 
 from for_us_worker.types import WorkerEnv
 
