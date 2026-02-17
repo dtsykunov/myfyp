@@ -66,7 +66,7 @@ class SnapshotStore:
         created_at = now or datetime.now(timezone.utc)
         expires_at = created_at + timedelta(days=self.retention_days)
         payload_json = json.dumps(
-            payload.model_dump(by_alias=True, mode="json"),
+            payload.model_dump(by_alias=True, mode="json", exclude_none=True),
             separators=(",", ":"),
             sort_keys=True,
         )

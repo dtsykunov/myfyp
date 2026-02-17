@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import sqlite3
 
-from for_us_api.models import CreateSnapshotRequest
+from for_us_api.models import CreateSnapshotRequest, RecommendationItem
 from for_us_api.store import SnapshotStore
 
 
@@ -18,7 +18,9 @@ def test_initialize_deletes_expired_rows(tmp_path: Path) -> None:
     store = SnapshotStore(database_path=database_path)
     store.initialize()
     store.create_snapshot(
-        CreateSnapshotRequest(videos=["lzChIIJMpGk"], shorts=[]),
+        CreateSnapshotRequest(
+            videos=[RecommendationItem(videoHash="lzChIIJMpGk", title="Sample video")], shorts=[]
+        ),
         now=datetime.now(timezone.utc) - timedelta(days=8),
     )
 
@@ -27,4 +29,3 @@ def test_initialize_deletes_expired_rows(tmp_path: Path) -> None:
     store.initialize()
 
     assert _count_rows(database_path) == 0
-

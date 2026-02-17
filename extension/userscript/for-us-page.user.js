@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://for-us-page.local
-// @version      0.1.4
+// @version      0.1.5
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
@@ -14,9 +14,35 @@
 
   const APP_NAME = "For Us Page";
   const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+  const RELATIVE_ENGLISH_TIME_PATTERN =
+    /^(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago$/i;
+  const RELATIVE_SECONDS_BY_UNIT = {
+    second: 1,
+    minute: 60,
+    hour: 3600,
+    day: 86400,
+    week: 604800,
+    month: 2592000,
+    year: 31536000,
+  };
   const API_BASE_URL_STORAGE_KEY = "forUsPage.apiBaseUrl";
   const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
   const pageWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
+
+  function normalizeText(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function toAbsoluteUrl(href, baseUrl) {
+    if (!href) {
+      return null;
+    }
+    try {
+      return new URL(href, baseUrl).toString();
+    } catch {
+      return null;
+    }
+  }
 
   function extractVideoHashFromHref(href, baseUrl) {
     if (!href) {
@@ -43,48 +69,233 @@
     return null;
   }
 
-  function collectVideoHashesFromDocument(doc) {
+  function parseViewCount(text) {
+    const normalized = normalizeText(text).toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+
+    let numericPart = normalized.replace(/\bviews?\b/g, "").trim();
+    if (!numericPart || /[^0-9kmb.,\s]/i.test(numericPart)) {
+      return null;
+    }
+
+    const match = numericPart.match(/^([0-9]+(?:[.,][0-9]+)?)\s*([kmb])?$/i);
+    if (!match) {
+      numericPart = numericPart.replace(/[^\d]/g, "");
+      if (!numericPart) {
+        return null;
+      }
+      const parsedInteger = Number.parseInt(numericPart, 10);
+      return Number.isNaN(parsedInteger) ? null : parsedInteger;
+    }
+
+    const suffix = (match[2] || "").toLowerCase();
+    if (!suffix) {
+      const parsedInteger = Number.parseInt(match[1].replace(/[^\d]/g, ""), 10);
+      return Number.isNaN(parsedInteger) ? null : parsedInteger;
+    }
+
+    const parsedNumber = Number.parseFloat(match[1].replace(",", "."));
+    if (Number.isNaN(parsedNumber)) {
+      return null;
+    }
+
+    const multiplier = suffix === "k" ? 1_000 : suffix === "m" ? 1_000_000 : 1_000_000_000;
+    return Math.round(parsedNumber * multiplier);
+  }
+
+  function parsePublishedAt(text, nowMs = Date.now()) {
+    const normalized = normalizeText(text).toLowerCase();
+    if (!normalized) {
+      return null;
+    }
+    if (normalized === "just now") {
+      return new Date(nowMs).toISOString();
+    }
+
+    const withoutPrefix = normalized.replace(/^streamed\s+/, "");
+    const match = withoutPrefix.match(RELATIVE_ENGLISH_TIME_PATTERN);
+    if (!match) {
+      return null;
+    }
+
+    const amount = Number.parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+    const unitSeconds = RELATIVE_SECONDS_BY_UNIT[unit];
+    if (Number.isNaN(amount) || !unitSeconds) {
+      return null;
+    }
+
+    return new Date(nowMs - amount * unitSeconds * 1000).toISOString();
+  }
+
+  function buildRecommendationItem(fields) {
+    const item = {
+      videoHash: fields.videoHash,
+      title: fields.title || fields.videoHash,
+    };
+    if (fields.channelName) {
+      item.channelName = fields.channelName;
+    }
+    if (fields.channelLink) {
+      item.channelLink = fields.channelLink;
+    }
+    if (fields.channelAvatar) {
+      item.channelAvatar = fields.channelAvatar;
+    }
+    if (typeof fields.viewCount === "number" && Number.isFinite(fields.viewCount)) {
+      item.viewCount = fields.viewCount;
+    }
+    if (fields.publishedAt) {
+      item.publishedAt = fields.publishedAt;
+    }
+    return item;
+  }
+
+  function parseStandardVideoItem(item, baseUrl, nowMs) {
+    const primaryVideoLink = item.querySelector("a[href*='/watch?v=']");
+    const videoHash = extractVideoHashFromHref(
+      primaryVideoLink ? primaryVideoLink.getAttribute("href") : null,
+      baseUrl
+    );
+    if (!videoHash) {
+      return null;
+    }
+
+    const titleLink = item.querySelector("h3 a[href*='/watch?v=']");
+    const titleText = normalizeText(titleLink ? titleLink.textContent : "");
+    const titleAttr = normalizeText(titleLink ? titleLink.getAttribute("title") : "");
+    const title = titleText || titleAttr || videoHash;
+
+    const channelLinkElement = item.querySelector(
+      ".yt-lockup-metadata-view-model__metadata-row a[href]"
+    );
+    const channelName = normalizeText(
+      channelLinkElement ? channelLinkElement.textContent : ""
+    );
+    const channelLink = toAbsoluteUrl(
+      channelLinkElement ? channelLinkElement.getAttribute("href") : null,
+      baseUrl
+    );
+    const channelAvatar = toAbsoluteUrl(
+      item
+        .querySelector(".yt-lockup-metadata-view-model__avatar img[src]")
+        ?.getAttribute("src"),
+      baseUrl
+    );
+
+    const metadataTexts = Array.from(
+      item.querySelectorAll(
+        ".yt-lockup-metadata-view-model__metadata .yt-content-metadata-view-model__metadata-row [role='text']"
+      )
+    )
+      .map((node) => normalizeText(node.textContent))
+      .filter(Boolean);
+
+    let viewCount = null;
+    let publishedAt = null;
+    for (const metadataText of metadataTexts) {
+      if (viewCount === null) {
+        const parsedViews = parseViewCount(metadataText);
+        if (parsedViews !== null) {
+          viewCount = parsedViews;
+        }
+      }
+      if (publishedAt === null) {
+        const parsedPublishedAt = parsePublishedAt(metadataText, nowMs);
+        if (parsedPublishedAt !== null) {
+          publishedAt = parsedPublishedAt;
+        }
+      }
+      if (viewCount !== null && publishedAt !== null) {
+        break;
+      }
+    }
+
+    return buildRecommendationItem({
+      videoHash,
+      title,
+      channelName: channelName || null,
+      channelLink,
+      channelAvatar,
+      viewCount,
+      publishedAt,
+    });
+  }
+
+  function parseShortItem(item, baseUrl, nowMs) {
+    const shortLink = item.querySelector("a[href*='/shorts/']");
+    const videoHash = extractVideoHashFromHref(
+      shortLink ? shortLink.getAttribute("href") : null,
+      baseUrl
+    );
+    if (!videoHash) {
+      return null;
+    }
+
+    const titleElement = item.querySelector(
+      ".shortsLockupViewModelHostMetadataTitle [role='text']"
+    );
+    const titleLink = item.querySelector(".shortsLockupViewModelHostMetadataTitle a[href]");
+    const title = normalizeText(titleElement ? titleElement.textContent : "")
+      || normalizeText(titleLink ? titleLink.getAttribute("title") : "")
+      || videoHash;
+
+    const viewText = normalizeText(
+      item.querySelector(".shortsLockupViewModelHostMetadataSubhead [role='text']")
+        ?.textContent
+    );
+    const viewCount = parseViewCount(viewText);
+    const publishedAt = parsePublishedAt(viewText, nowMs);
+
+    return buildRecommendationItem({
+      videoHash,
+      title,
+      viewCount,
+      publishedAt,
+    });
+  }
+
+  function collectRecommendationsFromDocument(doc) {
     const items = doc.querySelectorAll("ytd-rich-item-renderer");
     const videos = [];
     const shorts = [];
     const seenVideos = new Set();
     const seenShorts = new Set();
+    const baseUrl = window.location.origin;
+    const nowMs = Date.now();
 
     for (const item of items) {
       const isShortsItem = Boolean(item.closest("ytd-rich-section-renderer"));
-      const links = item.querySelectorAll("a[href]");
-
-      for (const link of links) {
-        const videoHash = extractVideoHashFromHref(
-          link.getAttribute("href"),
-          window.location.origin
-        );
-        if (!videoHash) {
-          continue;
-        }
-
-        if (isShortsItem) {
-          if (seenShorts.has(videoHash)) {
-            continue;
-          }
-          seenShorts.add(videoHash);
-          shorts.push(videoHash);
-          continue;
-        }
-
-        if (seenVideos.has(videoHash)) {
-          continue;
-        }
-        seenVideos.add(videoHash);
-        videos.push(videoHash);
+      const parsedItem = isShortsItem
+        ? parseShortItem(item, baseUrl, nowMs)
+        : parseStandardVideoItem(item, baseUrl, nowMs);
+      if (!parsedItem) {
+        continue;
       }
+
+      if (isShortsItem) {
+        if (seenShorts.has(parsedItem.videoHash)) {
+          continue;
+        }
+        seenShorts.add(parsedItem.videoHash);
+        shorts.push(parsedItem);
+        continue;
+      }
+
+      if (seenVideos.has(parsedItem.videoHash)) {
+        continue;
+      }
+      seenVideos.add(parsedItem.videoHash);
+      videos.push(parsedItem);
     }
 
     return { videos, shorts };
   }
 
   function createRecommendationSnapshot(doc = document) {
-    const collections = collectVideoHashesFromDocument(doc);
+    const collections = collectRecommendationsFromDocument(doc);
     return {
       capturedAt: new Date().toISOString(),
       pageUrl: window.location.href,
@@ -199,7 +410,8 @@
   function registerPublicApi() {
     pageWindow.forUsPage = Object.assign(pageWindow.forUsPage || {}, {
       extractVideoHashFromHref,
-      collectVideoHashesFromDocument,
+      collectVideoHashesFromDocument: collectRecommendationsFromDocument,
+      collectRecommendationsFromDocument,
       createRecommendationSnapshot,
       logSnapshot,
       getApiBaseUrl,

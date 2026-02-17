@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.responses import Response
 
 from for_us_api.abuse import AbuseConfig, InMemoryAbuseGuard
-from for_us_api.models import CreateSnapshotRequest, CreateSnapshotResponse, StoredSnapshot
+from for_us_api.models import CreateSnapshotRequest, CreateSnapshotResponse, RecommendationItem, StoredSnapshot
 from for_us_api.store import SnapshotStore
 
 
@@ -63,7 +63,11 @@ def create_app(
             raise HTTPException(status_code=429, detail=reason)
         return snapshot_store.create_snapshot(payload)
 
-    @app.get("/api/snapshots/{snapshot_hash}", response_model=CreateSnapshotRequest)
+    @app.get(
+        "/api/snapshots/{snapshot_hash}",
+        response_model=CreateSnapshotRequest,
+        response_model_exclude_none=True,
+    )
     def get_snapshot(request: Request, snapshot_hash: str) -> CreateSnapshotRequest:  # pyright: ignore[reportUnusedFunction]
         allowed, reason = guard.allow_snapshot_read(_client_ip(request))
         if not allowed:
@@ -193,14 +197,60 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
 
       .title {{
         margin: 0;
-        padding: 10px 12px;
         font-size: 14px;
         line-height: 1.25;
         color: var(--text);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
       }}
 
       .empty {{
         color: var(--muted);
+      }}
+
+      .card-body {{
+        padding: 10px 12px;
+      }}
+
+      .meta-line {{
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.25;
+      }}
+
+      .channel {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+      }}
+
+      .channel-avatar {{
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        object-fit: cover;
+        flex-shrink: 0;
+      }}
+
+      .channel-name {{
+        color: var(--muted);
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }}
+
+      .channel-name a {{
+        color: inherit;
+        text-decoration: none;
+      }}
+
+      .channel-name a:hover {{
+        text-decoration: underline;
       }}
 
       @media (max-width: 2280px) {{
@@ -244,48 +294,91 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
 """
 
 
-def _render_video_grid(video_hashes: list[str]) -> str:
-    if not video_hashes:
+def _render_video_grid(items: list[RecommendationItem]) -> str:
+    if not items:
         return '<p class="empty">No videos.</p>'
 
     list_items: list[str] = []
-    for video_hash in video_hashes:
-        escaped_hash = html.escape(video_hash)
+    for item in items:
+        escaped_hash = html.escape(item.video_hash)
+        escaped_title = html.escape(item.title)
         href = f"https://www.youtube.com/watch?v={escaped_hash}"
         thumb = f"https://i.ytimg.com/vi/{escaped_hash}/hqdefault.jpg"
         list_items.append(
             (
                 '<article class="video-card">'
                 f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
-                f'<img src="{thumb}" alt="{escaped_hash} thumbnail" loading="lazy">'
+                f'<img src="{thumb}" alt="{escaped_title} thumbnail" loading="lazy">'
                 "</a>"
-                f'<h3 class="title">{escaped_hash}</h3>'
+                '<div class="card-body">'
+                f'<h3 class="title">{escaped_title}</h3>'
+                f"{_render_card_metadata(item)}"
+                "</div>"
                 "</article>"
             )
         )
     return f'<section class="videos-grid">{"".join(list_items)}</section>'
 
 
-def _render_shorts_grid(video_hashes: list[str]) -> str:
-    if not video_hashes:
+def _render_shorts_grid(items: list[RecommendationItem]) -> str:
+    if not items:
         return '<p class="empty">No shorts.</p>'
 
     list_items: list[str] = []
-    for video_hash in video_hashes:
-        escaped_hash = html.escape(video_hash)
+    for item in items:
+        escaped_hash = html.escape(item.video_hash)
+        escaped_title = html.escape(item.title)
         href = f"https://www.youtube.com/shorts/{escaped_hash}"
         thumb = f"https://i.ytimg.com/vi/{escaped_hash}/hqdefault.jpg"
         list_items.append(
             (
                 '<article class="short-card">'
                 f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
-                f'<img src="{thumb}" alt="{escaped_hash} short thumbnail" loading="lazy">'
+                f'<img src="{thumb}" alt="{escaped_title} short thumbnail" loading="lazy">'
                 "</a>"
-                f'<h3 class="title">{escaped_hash}</h3>'
+                '<div class="card-body">'
+                f'<h3 class="title">{escaped_title}</h3>'
+                f"{_render_card_metadata(item)}"
+                "</div>"
                 "</article>"
             )
         )
     return f'<section class="shorts-grid">{"".join(list_items)}</section>'
+
+
+def _render_card_metadata(item: RecommendationItem) -> str:
+    channel_html = _render_channel(item)
+    stats_html = _render_stats(item)
+    return f"{channel_html}{stats_html}"
+
+
+def _render_channel(item: RecommendationItem) -> str:
+    if item.channel_name is None:
+        return ""
+
+    name = html.escape(item.channel_name)
+    name_html = name
+    if item.channel_link is not None:
+        escaped_link = html.escape(str(item.channel_link))
+        name_html = f'<a href="{escaped_link}" target="_blank" rel="noopener noreferrer">{name}</a>'
+
+    avatar_html = ""
+    if item.channel_avatar is not None:
+        escaped_avatar = html.escape(str(item.channel_avatar))
+        avatar_html = f'<img class="channel-avatar" src="{escaped_avatar}" alt="{name} avatar" loading="lazy">'
+
+    return f'<div class="channel">{avatar_html}<div class="channel-name">{name_html}</div></div>'
+
+
+def _render_stats(item: RecommendationItem) -> str:
+    parts: list[str] = []
+    if item.view_count is not None:
+        parts.append(f"{item.view_count:,} views")
+    if item.published_at is not None:
+        parts.append(item.published_at.date().isoformat())
+    if not parts:
+        return ""
+    return f'<div class="meta-line">{html.escape(" • ".join(parts))}</div>'
 
 
 def _client_ip(request: Request) -> str:

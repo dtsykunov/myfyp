@@ -26,8 +26,18 @@ def test_create_snapshot_persists_payload_and_returns_response(tmp_path: Path) -
     payload = {
         "capturedAt": "2026-02-17T11:00:00Z",
         "pageUrl": "https://www.youtube.com/",
-        "videos": ["lzChIIJMpGk"],
-        "shorts": ["dQw4w9WgXcQ"],
+        "videos": [
+            {
+                "videoHash": "lzChIIJMpGk",
+                "title": "deadlock: items for idiot",
+                "channelName": "chalant",
+                "channelLink": "https://www.youtube.com/@itschalant",
+                "channelAvatar": "https://yt3.ggpht.com/avatar",
+                "publishedAt": "2026-02-14T11:00:00Z",
+                "viewCount": 81000,
+            }
+        ],
+        "shorts": [{"videoHash": "dQw4w9WgXcQ", "title": "short"}],
     }
 
     with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
@@ -51,7 +61,7 @@ def test_create_snapshot_persists_payload_and_returns_response(tmp_path: Path) -
 def test_create_snapshot_rejects_invalid_payload(tmp_path: Path) -> None:
     database_path = tmp_path / "snapshots.db"
     payload = {
-        "videos": ["invalid-hash"],
+        "videos": [{"videoHash": "invalid-hash", "title": "bad"}],
         "shorts": [],
     }
 
