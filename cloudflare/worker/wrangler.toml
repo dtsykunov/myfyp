@@ -1,0 +1,12 @@
+name = "for-us-page"
+main = "src/index.ts"
+compatibility_date = "2026-02-17"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "for-us-page"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[observability.logs]
+enabled = true
