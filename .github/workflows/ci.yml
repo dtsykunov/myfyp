@@ -5,7 +5,17 @@ on:
     branches:
       - main
       - master
+    paths:
+      - api/**
+      - cloudflare/worker/**
+      - docker-compose.yml
+      - .github/workflows/ci.yml
   pull_request:
+    paths:
+      - api/**
+      - cloudflare/worker/**
+      - docker-compose.yml
+      - .github/workflows/ci.yml
 
 jobs:
   api-quality:

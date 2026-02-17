@@ -8,7 +8,6 @@ on:
     paths:
       - cloudflare/worker/**
       - .github/workflows/deploy-worker.yml
-      - docker-compose.yml
   workflow_dispatch:
 
 permissions:
