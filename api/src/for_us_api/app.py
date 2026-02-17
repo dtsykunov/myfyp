@@ -94,23 +94,149 @@ app = create_app()
 
 
 def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
-    videos = _render_video_list(snapshot.payload.videos, is_short=False)
-    shorts = _render_video_list(snapshot.payload.shorts, is_short=True)
+    videos = _render_video_grid(snapshot.payload.videos)
+    shorts = _render_shorts_grid(snapshot.payload.shorts)
     escaped_hash = html.escape(snapshot.hash)
     return f"""<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>For Us Page</title>
+    <title>For Us Page - {escaped_hash}</title>
+    <style>
+      :root {{
+        --bg: #0f0f0f;
+        --card: #181818;
+        --text: #f1f1f1;
+        --muted: #aaaaaa;
+      }}
+
+      * {{
+        box-sizing: border-box;
+      }}
+
+      body {{
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, sans-serif;
+      }}
+
+      main {{
+        max-width: 2400px;
+        margin: 0 auto;
+        padding: 20px;
+      }}
+
+      h1 {{
+        margin: 0 0 8px;
+        font-size: 28px;
+      }}
+
+      .meta {{
+        margin: 0 0 24px;
+        color: var(--muted);
+      }}
+
+      .section-title {{
+        margin: 24px 0 12px;
+        font-size: 22px;
+      }}
+
+      .videos-grid {{
+        display: grid;
+        grid-template-columns: repeat(6, 365px);
+        gap: 16px;
+        justify-content: center;
+      }}
+
+      .shorts-grid {{
+        display: grid;
+        grid-template-columns: repeat(auto-fill, 365px);
+        gap: 16px;
+        justify-content: center;
+      }}
+
+      .video-card {{
+        width: 365px;
+        height: 305px;
+        background: var(--card);
+        border-radius: 10px;
+        overflow: hidden;
+      }}
+
+      .short-card {{
+        width: 365px;
+        height: 547px;
+        background: var(--card);
+        border-radius: 10px;
+        overflow: hidden;
+      }}
+
+      .thumb {{
+        display: block;
+      }}
+
+      .video-card .thumb img {{
+        width: 365px;
+        height: 205px;
+        object-fit: cover;
+        display: block;
+      }}
+
+      .short-card .thumb img {{
+        width: 365px;
+        height: 487px;
+        object-fit: cover;
+        display: block;
+      }}
+
+      .title {{
+        margin: 0;
+        padding: 10px 12px;
+        font-size: 14px;
+        line-height: 1.25;
+        color: var(--text);
+      }}
+
+      .empty {{
+        color: var(--muted);
+      }}
+
+      @media (max-width: 2280px) {{
+        .videos-grid {{
+          grid-template-columns: repeat(4, 365px);
+        }}
+      }}
+
+      @media (max-width: 1520px) {{
+        .videos-grid {{
+          grid-template-columns: repeat(3, 365px);
+        }}
+      }}
+
+      @media (max-width: 1140px) {{
+        .videos-grid,
+        .shorts-grid {{
+          grid-template-columns: repeat(2, 365px);
+        }}
+      }}
+
+      @media (max-width: 760px) {{
+        .videos-grid,
+        .shorts-grid {{
+          grid-template-columns: repeat(1, 365px);
+        }}
+      }}
+    </style>
   </head>
   <body>
     <main>
       <h1>For Us Page</h1>
-      <p>Snapshot hash: <code>{escaped_hash}</code></p>
-      <h2>Videos</h2>
+      <p class="meta">Snapshot hash: <code>{escaped_hash}</code></p>
+      <h2 class="section-title">Videos</h2>
       {videos}
-      <h2>Shorts</h2>
+      <h2 class="section-title">Shorts</h2>
       {shorts}
     </main>
   </body>
@@ -118,21 +244,48 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
 """
 
 
-def _render_video_list(video_hashes: list[str], is_short: bool) -> str:
+def _render_video_grid(video_hashes: list[str]) -> str:
     if not video_hashes:
-        return "<p>No items.</p>"
+        return '<p class="empty">No videos.</p>'
 
     list_items: list[str] = []
     for video_hash in video_hashes:
         escaped_hash = html.escape(video_hash)
-        if is_short:
-            href = f"https://www.youtube.com/shorts/{escaped_hash}"
-        else:
-            href = f"https://www.youtube.com/watch?v={escaped_hash}"
+        href = f"https://www.youtube.com/watch?v={escaped_hash}"
+        thumb = f"https://i.ytimg.com/vi/{escaped_hash}/hqdefault.jpg"
         list_items.append(
-            f'<li><a href="{href}" target="_blank" rel="noopener noreferrer">{escaped_hash}</a></li>'
+            (
+                '<article class="video-card">'
+                f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
+                f'<img src="{thumb}" alt="{escaped_hash} thumbnail" loading="lazy">'
+                "</a>"
+                f'<h3 class="title">{escaped_hash}</h3>'
+                "</article>"
+            )
         )
-    return f"<ul>{''.join(list_items)}</ul>"
+    return f'<section class="videos-grid">{"".join(list_items)}</section>'
+
+
+def _render_shorts_grid(video_hashes: list[str]) -> str:
+    if not video_hashes:
+        return '<p class="empty">No shorts.</p>'
+
+    list_items: list[str] = []
+    for video_hash in video_hashes:
+        escaped_hash = html.escape(video_hash)
+        href = f"https://www.youtube.com/shorts/{escaped_hash}"
+        thumb = f"https://i.ytimg.com/vi/{escaped_hash}/hqdefault.jpg"
+        list_items.append(
+            (
+                '<article class="short-card">'
+                f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
+                f'<img src="{thumb}" alt="{escaped_hash} short thumbnail" loading="lazy">'
+                "</a>"
+                f'<h3 class="title">{escaped_hash}</h3>'
+                "</article>"
+            )
+        )
+    return f'<section class="shorts-grid">{"".join(list_items)}</section>'
 
 
 def _client_ip(request: Request) -> str:
