@@ -8,15 +8,18 @@ from urllib.parse import urlparse
 
 from pydantic import ValidationError
 
+from for_us_api.abuse import AbuseConfig
 from for_us_api.http_cache import build_cache_headers, build_etag, if_none_match_matches
 from for_us_api.models import CreateSnapshotRequest, CreateSnapshotResponse
 from for_us_api.rendering import render_snapshot_html
 
+from for_us_worker.d1_abuse import allow_snapshot_create, allow_snapshot_read, cleanup_abuse_state
 from for_us_worker.d1_store import create_snapshot, delete_expired_snapshots, get_snapshot_by_hash
 from for_us_worker.types import RequestLike, WorkerEnv
 
 _MAX_BODY_BYTES = 64 * 1024
 _SNAPSHOT_HASH_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
+_ABUSE_CONFIG = AbuseConfig()
 
 
 @dataclass(frozen=True)
@@ -77,9 +80,18 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
 
 async def handle_scheduled(env: WorkerEnv) -> None:
     await delete_expired_snapshots(env)
+    await cleanup_abuse_state(env)
 
 
 async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
+    create_decision = await allow_snapshot_create(
+        env=env,
+        client_ip=_client_ip(request),
+        config=_ABUSE_CONFIG,
+    )
+    if not create_decision.allowed:
+        return json_response({"detail": create_decision.reason}, status=429)
+
     body_text = await _read_body_with_limit(request, _MAX_BODY_BYTES)
     payload = CreateSnapshotRequest.model_validate_json(body_text)
     stored_snapshot = await create_snapshot(env, payload)
@@ -92,6 +104,14 @@ async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> Respo
 
 
 async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_hash: str) -> ResponseSpec:
+    read_decision = await allow_snapshot_read(
+        env=env,
+        client_ip=_client_ip(request),
+        config=_ABUSE_CONFIG,
+    )
+    if not read_decision.allowed:
+        return json_response({"detail": read_decision.reason}, status=429)
+
     lookup = await get_snapshot_by_hash(env, snapshot_hash)
     if lookup.is_expired:
         return json_response({"detail": "Snapshot has expired."}, status=410)
@@ -110,6 +130,14 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
 
 
 async def _handle_render_snapshot(snapshot_hash: str, request: RequestLike, env: WorkerEnv) -> ResponseSpec:
+    read_decision = await allow_snapshot_read(
+        env=env,
+        client_ip=_client_ip(request),
+        config=_ABUSE_CONFIG,
+    )
+    if not read_decision.allowed:
+        return html_response("<h1>429 Too Many Requests</h1>", status=429)
+
     lookup = await get_snapshot_by_hash(env, snapshot_hash)
     if lookup.is_expired:
         return html_response("<h1>410 Snapshot expired</h1>", status=410)
@@ -138,3 +166,15 @@ async def _read_body_with_limit(request: RequestLike, max_bytes: int) -> str:
     if len(body_text.encode("utf-8")) > max_bytes:
         raise ValueError("Request body too large.")
     return body_text
+
+
+def _client_ip(request: RequestLike) -> str:
+    cf_connecting_ip = request.headers.get("cf-connecting-ip")
+    if cf_connecting_ip:
+        return cf_connecting_ip.strip()
+
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+
+    return "unknown"

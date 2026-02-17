@@ -26,6 +26,8 @@ class FakePreparedStatement:
 @dataclass
 class FakeD1Database:
     snapshots: dict[str, dict[str, str]] = field(default_factory=dict)
+    abuse_rate_limit: dict[tuple[str, str, str], int] = field(default_factory=dict)
+    abuse_write_daily: dict[tuple[str, str], int] = field(default_factory=dict)
 
     def prepare(self, query: str) -> FakePreparedStatement:
         return FakePreparedStatement(self, query)
@@ -52,6 +54,43 @@ class FakeD1Database:
             for snapshot_hash in list(self.snapshots):
                 if self.snapshots[snapshot_hash]["expires_at"] <= cutoff:
                     self.snapshots.pop(snapshot_hash)
+                    deleted += 1
+            return deleted
+        if "insert into abuse_ip_rate_limit" in normalized:
+            ip_hash = _as_str(params[0])
+            action = _as_str(params[1])
+            window_start = _as_str(params[2])
+            limit = _as_int(params[3])
+            key = (ip_hash, action, window_start)
+            count = self.abuse_rate_limit.get(key, 0)
+            if count >= limit:
+                return 0
+            self.abuse_rate_limit[key] = count + 1
+            return 1
+        if "insert into abuse_ip_write_daily" in normalized:
+            ip_hash = _as_str(params[0])
+            quota_date = _as_str(params[1])
+            limit = _as_int(params[2])
+            key = (ip_hash, quota_date)
+            count = self.abuse_write_daily.get(key, 0)
+            if count >= limit:
+                return 0
+            self.abuse_write_daily[key] = count + 1
+            return 1
+        if "delete from abuse_ip_rate_limit" in normalized:
+            cutoff = _as_str(params[0])
+            deleted = 0
+            for key in list(self.abuse_rate_limit):
+                if key[2] < cutoff:
+                    self.abuse_rate_limit.pop(key)
+                    deleted += 1
+            return deleted
+        if "delete from abuse_ip_write_daily" in normalized:
+            cutoff = _as_str(params[0])
+            deleted = 0
+            for key in list(self.abuse_write_daily):
+                if key[1] < cutoff:
+                    self.abuse_write_daily.pop(key)
                     deleted += 1
             return deleted
         raise AssertionError(f"Unsupported run query: {query}")
@@ -97,4 +136,10 @@ class FakeRequest:
 def _as_str(value: object) -> str:
     if not isinstance(value, str):
         raise AssertionError(f"Expected str, got {type(value)!r}")
+    return value
+
+
+def _as_int(value: object) -> int:
+    if not isinstance(value, int):
+        raise AssertionError(f"Expected int, got {type(value)!r}")
     return value
