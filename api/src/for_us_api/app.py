@@ -10,6 +10,17 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.responses import Response
 
 from for_us_api.abuse import AbuseConfig, InMemoryAbuseGuard
+from for_us_api.formatting import (
+    format_compact_views as _format_compact_views,
+    format_relative_time as _format_relative_time,
+    format_snapshot_taken_at as _format_snapshot_taken_at,
+    to_utc as _to_utc,
+)
+from for_us_api.http_cache import (
+    build_cache_headers as _build_cache_headers,
+    build_etag as _build_etag,
+    if_none_match_matches as _if_none_match_matches,
+)
 from for_us_api.models import CreateSnapshotRequest, CreateSnapshotResponse, RecommendationItem, StoredSnapshot
 from for_us_api.store import SnapshotStore
 
@@ -814,86 +825,6 @@ def _render_stats_text(item: RecommendationItem, metadata_reference_time: dateti
 def _resolve_metadata_reference_time(snapshot: StoredSnapshot) -> datetime:
     reference_time = snapshot.payload.captured_at or snapshot.created_at
     return _to_utc(reference_time)
-
-
-def _format_snapshot_taken_at(taken_at: datetime) -> str:
-    normalized = _to_utc(taken_at)
-    return normalized.strftime("%Y-%m-%d %H:%M:%S UTC")
-
-
-def _to_utc(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
-
-
-def _build_etag(prefix: str, snapshot_hash: str) -> str:
-    return f"\"{prefix}-{snapshot_hash}\""
-
-
-def _build_cache_headers(expires_at: datetime, etag: str) -> dict[str, str]:
-    now = datetime.now(timezone.utc)
-    max_age = max(0, int((_to_utc(expires_at) - now).total_seconds()))
-    return {
-        "Cache-Control": f"public, max-age={max_age}, immutable",
-        "ETag": etag,
-    }
-
-
-def _if_none_match_matches(header_value: str | None, expected_etag: str) -> bool:
-    if header_value is None:
-        return False
-    if header_value.strip() == "*":
-        return True
-    candidates = [token.strip() for token in header_value.split(",")]
-    return expected_etag in candidates
-
-
-def _format_relative_time(published_at: datetime, reference_time: datetime) -> str:
-    published = _to_utc(published_at)
-    reference = _to_utc(reference_time)
-    delta_seconds = max(0, int((reference - published).total_seconds()))
-    if delta_seconds <= 0:
-        return "just now"
-
-    intervals = (
-        ("year", 31_536_000),
-        ("month", 2_592_000),
-        ("week", 604_800),
-        ("day", 86_400),
-        ("hour", 3_600),
-        ("minute", 60),
-        ("second", 1),
-    )
-    for unit_name, unit_seconds in intervals:
-        amount = delta_seconds // unit_seconds
-        if amount < 1:
-            continue
-        suffix = "" if amount == 1 else "s"
-        return f"{amount} {unit_name}{suffix} ago"
-
-    return "just now"
-
-
-def _format_compact_views(view_count: int) -> str:
-    if view_count < 1_000:
-        return f"{view_count} views"
-    if view_count < 1_000_000:
-        value = view_count / 1_000
-        suffix = "K"
-    elif view_count < 1_000_000_000:
-        value = view_count / 1_000_000
-        suffix = "M"
-    else:
-        value = view_count / 1_000_000_000
-        suffix = "B"
-
-    if value >= 10:
-        compact_value = f"{value:.0f}"
-    else:
-        compact_value = f"{value:.1f}".rstrip("0").rstrip(".")
-    return f"{compact_value}{suffix} views"
-
 
 def _client_ip(request: Request) -> str:
     forwarded_for = request.headers.get("x-forwarded-for")
