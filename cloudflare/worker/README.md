@@ -29,6 +29,7 @@ npx wrangler d1 migrations apply for-us-page --remote
 ## GitHub Actions Deployment
 
 `Deploy Worker` workflow applies D1 migrations and deploys the worker from CI.
+It uses `pywrangler` (not plain `wrangler deploy`) so Python dependencies are bundled for deployment.
 
 Use a protected GitHub environment named `production` and configure:
 
