@@ -34,8 +34,10 @@ def test_d1_store_create_get_missing_and_expired(monkeypatch: pytest.MonkeyPatch
     now = datetime(2026, 2, 17, 12, 0, tzinfo=timezone.utc)
 
     monkeypatch.setattr(d1_store, "_generate_hash", lambda: "AbcdEf123456")
+    monkeypatch.setattr(d1_store, "_generate_remove_token", lambda: "A" * 32)
     created = _run(d1_store.create_snapshot(env, _payload(), now=now))
     assert created.hash == "AbcdEf123456"
+    assert created.delete_token == "A" * 32
 
     present = _run(d1_store.get_snapshot_by_hash(env, "AbcdEf123456", now=now))
     assert present.snapshot is not None
@@ -58,9 +60,11 @@ def test_d1_store_create_snapshot_raises_after_collisions(monkeypatch: pytest.Mo
         "created_at": "2026-02-17T00:00:00+00:00",
         "expires_at": "2026-02-24T00:00:00+00:00",
         "payload_json": '{"videos":[],"shorts":[]}',
+        "delete_token": "A" * 32,
     }
 
     monkeypatch.setattr(d1_store, "_generate_hash", lambda: "AbcdEf123456")
+    monkeypatch.setattr(d1_store, "_generate_remove_token", lambda: "A" * 32)
 
     with pytest.raises(RuntimeError):
         _run(d1_store.create_snapshot(env, _payload(), now=datetime(2026, 2, 17, tzinfo=timezone.utc)))
@@ -73,6 +77,7 @@ def test_d1_store_delete_expired_and_helpers() -> None:
         "created_at": "2026-02-01T00:00:00+00:00",
         "expires_at": "2026-02-02T00:00:00+00:00",
         "payload_json": '{"videos":[],"shorts":[]}',
+        "delete_token": "A" * 32,
     }
 
     deleted = _run(d1_store.delete_expired_snapshots(env, now=datetime(2026, 2, 3, tzinfo=timezone.utc)))
@@ -95,6 +100,39 @@ def test_d1_store_delete_expired_and_helpers() -> None:
 
     with pytest.raises(ValueError):
         d1_store._require_str({"hash": 123}, "hash")
+
+
+def test_d1_store_delete_by_token() -> None:
+    env = FakeEnv()
+    now = datetime(2026, 2, 17, 12, 0, tzinfo=timezone.utc)
+    created = _run(d1_store.create_snapshot(env, _payload(), now=now))
+
+    invalid = _run(
+        d1_store.delete_snapshot_by_hash_and_token(
+            env=env,
+            snapshot_hash=created.hash,
+            remove_token="B" * 32,
+        )
+    )
+    assert invalid is d1_store.DeleteSnapshotResult.INVALID_TOKEN
+
+    deleted = _run(
+        d1_store.delete_snapshot_by_hash_and_token(
+            env=env,
+            snapshot_hash=created.hash,
+            remove_token=created.delete_token,
+        )
+    )
+    assert deleted is d1_store.DeleteSnapshotResult.DELETED
+
+    missing = _run(
+        d1_store.delete_snapshot_by_hash_and_token(
+            env=env,
+            snapshot_hash=created.hash,
+            remove_token=created.delete_token,
+        )
+    )
+    assert missing is d1_store.DeleteSnapshotResult.NOT_FOUND
 
 
 def test_d1_abuse_rate_limits_quotas_and_cleanup() -> None:

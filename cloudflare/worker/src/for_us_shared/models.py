@@ -17,6 +17,7 @@ else:  # pragma: no cover - runtime import path differs between pydantic v1 and 
 
 _VIDEO_HASH_PATTERN = r"^[A-Za-z0-9_-]{11}$"
 _SNAPSHOT_HASH_PATTERN = r"^[A-Za-z0-9_-]{8,64}$"
+_REMOVE_TOKEN_PATTERN = r"^[A-Za-z0-9_-]{16,128}$"
 
 
 def _empty_recommendation_items() -> list[RecommendationItem]:
@@ -32,6 +33,12 @@ def _require_video_hash(value: str) -> str:
 def _require_snapshot_hash(value: str) -> str:
     if not re.fullmatch(_SNAPSHOT_HASH_PATTERN, value):
         raise ValueError("Invalid snapshot hash format.")
+    return value
+
+
+def _require_remove_token(value: str) -> str:
+    if not re.fullmatch(_REMOVE_TOKEN_PATTERN, value):
+        raise ValueError("Invalid remove token format.")
     return value
 
 
@@ -103,10 +110,17 @@ class CreateSnapshotResponse(_Model):
 
     hash: str
     expires_at: datetime = Field(alias="expiresAt")
+    remove_token: str = Field(alias="removeToken")
+    url: str | None = Field(default=None)
+    remove_url: str | None = Field(default=None, alias="removeUrl")
 
     @validator("hash")
     def _validate_hash(cls, value: str) -> str:
         return _require_snapshot_hash(value)
+
+    @validator("remove_token")
+    def _validate_remove_token(cls, value: str) -> str:
+        return _require_remove_token(value)
 
 
 class StoredSnapshot(_Model):

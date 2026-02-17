@@ -46,14 +46,18 @@ class FakeD1Database:
     def run_query(self, query: str, params: tuple[object, ...]) -> int:
         normalized = " ".join(query.lower().split())
         if "insert or ignore into snapshots" in normalized:
+            if len(params) < 4:
+                raise AssertionError("Expected at least 4 parameters for snapshots insert.")
             snapshot_hash = _as_str(params[0])
             if snapshot_hash in self.snapshots:
                 return 0
+            delete_token = _as_str(params[4]) if len(params) > 4 else ""
             self.snapshots[snapshot_hash] = {
                 "hash": snapshot_hash,
                 "created_at": _as_str(params[1]),
                 "expires_at": _as_str(params[2]),
                 "payload_json": _as_str(params[3]),
+                "delete_token": delete_token,
             }
             return 1
         if "delete from snapshots where hash" in normalized:
@@ -110,6 +114,11 @@ class FakeD1Database:
         normalized = " ".join(query.lower().split())
         if "select hash, created_at, expires_at, payload_json from snapshots where hash" in normalized:
             return self.snapshots.get(_as_str(params[0]))
+        if "select delete_token from snapshots where hash" in normalized:
+            snapshot = self.snapshots.get(_as_str(params[0]))
+            if snapshot is None:
+                return None
+            return {"delete_token": snapshot.get("delete_token")}
         raise AssertionError(f"Unsupported first query: {query}")
 
 

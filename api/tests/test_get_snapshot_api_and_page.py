@@ -233,3 +233,47 @@ def test_expired_snapshot_is_cleaned_up_and_returns_404(tmp_path: Path) -> None:
 
     assert api_response.status_code == 404
     assert page_response.status_code == 404
+
+
+def test_remove_snapshot_endpoint_deletes_snapshot_when_token_matches(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    payload = {
+        "videos": [{"videoHash": "lzChIIJMpGk", "title": "remove me"}],
+        "shorts": [],
+    }
+
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        create_response = client.post("/api/snapshots", json=payload)
+        response_body = create_response.json()
+        snapshot_hash = response_body["hash"]
+        remove_token = response_body["removeToken"]
+
+        remove_response = client.get(
+            f"/api/snapshots/{snapshot_hash}/remove/{remove_token}"
+        )
+        get_response = client.get(f"/api/snapshots/{snapshot_hash}")
+
+    assert remove_response.status_code == 200
+    assert remove_response.json() == {"detail": "Snapshot removed."}
+    assert get_response.status_code == 404
+
+
+def test_remove_snapshot_endpoint_rejects_invalid_token(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    payload = {
+        "videos": [{"videoHash": "lzChIIJMpGk", "title": "keep me"}],
+        "shorts": [],
+    }
+
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        create_response = client.post("/api/snapshots", json=payload)
+        snapshot_hash = create_response.json()["hash"]
+
+        remove_response = client.get(
+            f"/api/snapshots/{snapshot_hash}/remove/{'B' * 32}"
+        )
+        get_response = client.get(f"/api/snapshots/{snapshot_hash}")
+
+    assert remove_response.status_code == 403
+    assert remove_response.json() == {"detail": "Invalid remove token."}
+    assert get_response.status_code == 200

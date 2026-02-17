@@ -3,6 +3,7 @@ import json
 import os
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 from pathlib import Path
 import secrets
 import sqlite3
@@ -19,11 +20,19 @@ DEFAULT_CLEANUP_INTERVAL_WRITES = 100
 DEFAULT_MAX_CACHED_SNAPSHOTS = 2000
 HASH_ALPHABET = string.ascii_letters + string.digits
 HASH_LENGTH = 12
+REMOVE_TOKEN_ALPHABET = string.ascii_letters + string.digits + "_-"
+REMOVE_TOKEN_LENGTH = 32
 MAX_HASH_GENERATION_ATTEMPTS = 5
 
 
 def _empty_snapshot_cache() -> OrderedDict[str, StoredSnapshot]:
     return OrderedDict()
+
+
+class DeleteSnapshotResult(Enum):
+    DELETED = "deleted"
+    NOT_FOUND = "not_found"
+    INVALID_TOKEN = "invalid_token"
 
 
 @dataclass
@@ -62,7 +71,8 @@ class SnapshotStore:
                     hash TEXT PRIMARY KEY,
                     created_at TEXT NOT NULL,
                     expires_at TEXT NOT NULL,
-                    payload_json TEXT NOT NULL
+                    payload_json TEXT NOT NULL,
+                    delete_token TEXT
                 )
                 """
             )
@@ -72,6 +82,7 @@ class SnapshotStore:
                 ON snapshots (expires_at)
                 """
             )
+            self._ensure_delete_token_column(connection)
         self.delete_expired()
 
     def create_snapshot(
@@ -79,6 +90,7 @@ class SnapshotStore:
     ) -> CreateSnapshotResponse:
         created_at = now or datetime.now(timezone.utc)
         expires_at = created_at + timedelta(days=self.retention_days)
+        delete_token = self._generate_remove_token()
         payload_json = json.dumps(
             payload.model_dump(by_alias=True, mode="json", exclude_none=True),
             separators=(",", ":"),
@@ -87,7 +99,13 @@ class SnapshotStore:
 
         for _ in range(MAX_HASH_GENERATION_ATTEMPTS):
             snapshot_hash = self._generate_hash()
-            if self._try_insert_snapshot(snapshot_hash, created_at, expires_at, payload_json):
+            if self._try_insert_snapshot(
+                snapshot_hash=snapshot_hash,
+                created_at=created_at,
+                expires_at=expires_at,
+                payload_json=payload_json,
+                delete_token=delete_token,
+            ):
                 self._cache_snapshot(
                     StoredSnapshot(
                         hash=snapshot_hash,
@@ -97,7 +115,11 @@ class SnapshotStore:
                     )
                 )
                 self._register_write_and_cleanup_if_needed()
-                return CreateSnapshotResponse(hash=snapshot_hash, expiresAt=expires_at)
+                return CreateSnapshotResponse(
+                    hash=snapshot_hash,
+                    expiresAt=expires_at,
+                    removeToken=delete_token,
+                )
 
         raise RuntimeError("Unable to persist snapshot due to hash collisions.")
 
@@ -107,19 +129,21 @@ class SnapshotStore:
         created_at: datetime,
         expires_at: datetime,
         payload_json: str,
+        delete_token: str,
     ) -> bool:
         try:
             with self._connect() as connection:
                 connection.execute(
                     """
-                    INSERT INTO snapshots (hash, created_at, expires_at, payload_json)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO snapshots (hash, created_at, expires_at, payload_json, delete_token)
+                    VALUES (?, ?, ?, ?, ?)
                     """,
                     (
                         snapshot_hash,
                         created_at.isoformat(),
                         expires_at.isoformat(),
                         payload_json,
+                        delete_token,
                     ),
                 )
                 connection.commit()
@@ -135,9 +159,29 @@ class SnapshotStore:
     def _generate_hash(self) -> str:
         return "".join(secrets.choice(HASH_ALPHABET) for _ in range(HASH_LENGTH))
 
+    def _generate_remove_token(self) -> str:
+        return "".join(secrets.choice(REMOVE_TOKEN_ALPHABET) for _ in range(REMOVE_TOKEN_LENGTH))
+
     def _configure_database(self, connection: sqlite3.Connection) -> None:
         connection.execute("PRAGMA journal_mode = WAL")
         connection.execute("PRAGMA synchronous = NORMAL")
+
+    def _ensure_delete_token_column(self, connection: sqlite3.Connection) -> None:
+        columns = {
+            str(row[1])
+            for row in connection.execute("PRAGMA table_info(snapshots)").fetchall()
+        }
+        if "delete_token" in columns:
+            return
+
+        connection.execute("ALTER TABLE snapshots ADD COLUMN delete_token TEXT")
+        connection.execute(
+            """
+            UPDATE snapshots
+            SET delete_token = lower(hex(randomblob(32)))
+            WHERE delete_token IS NULL OR delete_token = ''
+            """
+        )
 
     def delete_expired(self, now: datetime | None = None) -> int:
         effective_now = now or datetime.now(timezone.utc)
@@ -255,3 +299,34 @@ class SnapshotStore:
                 (snapshot_hash,),
             )
             connection.commit()
+
+    def delete_snapshot(self, snapshot_hash: str, remove_token: str) -> DeleteSnapshotResult:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                SELECT delete_token
+                FROM snapshots
+                WHERE hash = ?
+                """,
+                (snapshot_hash,),
+            )
+            row = cursor.fetchone()
+            if row is None:
+                return DeleteSnapshotResult.NOT_FOUND
+
+            stored_token = row[0]
+            if not isinstance(stored_token, str):
+                return DeleteSnapshotResult.INVALID_TOKEN
+            if not secrets.compare_digest(stored_token, remove_token):
+                return DeleteSnapshotResult.INVALID_TOKEN
+
+            connection.execute(
+                """
+                DELETE FROM snapshots
+                WHERE hash = ?
+                """,
+                (snapshot_hash,),
+            )
+            connection.commit()
+        self._evict_snapshot_cache(snapshot_hash)
+        return DeleteSnapshotResult.DELETED

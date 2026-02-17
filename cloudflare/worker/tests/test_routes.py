@@ -67,6 +67,11 @@ def test_create_and_get_snapshot_routes() -> None:
     assert create_response.status == 201
     created = json.loads(create_response.body)
     snapshot_hash = created["hash"]
+    remove_token = created["removeToken"]
+    assert created["url"].endswith(f"/{snapshot_hash}")
+    assert created["removeUrl"].endswith(
+        f"/api/snapshots/{snapshot_hash}/remove/{remove_token}"
+    )
 
     get_response = _run(
         handle_fetch(
@@ -81,6 +86,30 @@ def test_create_and_get_snapshot_routes() -> None:
     assert get_response.status == 200
     payload = json.loads(get_response.body)
     assert payload["videos"][0]["videoHash"] == "lzChIIJMpGk"
+
+    remove_response = _run(
+        handle_fetch(
+            FakeRequest(
+                method="GET",
+                url=f"https://example.com/api/snapshots/{snapshot_hash}/remove/{remove_token}",
+            ),
+            env,
+        )
+    )
+    assert remove_response.status == 200
+    assert json.loads(remove_response.body) == {"detail": "Snapshot removed."}
+
+    deleted_get = _run(
+        handle_fetch(
+            FakeRequest(
+                method="GET",
+                url=f"https://example.com/api/snapshots/{snapshot_hash}",
+                headers={"cf-connecting-ip": "198.51.100.10"},
+            ),
+            env,
+        )
+    )
+    assert deleted_get.status == 404
 
 
 def test_render_hash_route() -> None:
@@ -164,3 +193,39 @@ def test_create_rate_limit() -> None:
         )
     )
     assert blocked.status == 429
+
+
+def test_remove_snapshot_endpoint_rejects_invalid_token() -> None:
+    env = FakeEnv()
+    create_response = _run(
+        handle_fetch(
+            FakeRequest(
+                method="POST",
+                url="https://example.com/api/snapshots",
+                headers={
+                    "content-type": "application/json",
+                    "cf-connecting-ip": "198.51.100.40",
+                },
+                body=json.dumps(
+                    {
+                        "videos": [{"videoHash": "lzChIIJMpGk", "title": "video title"}],
+                        "shorts": [],
+                    }
+                ),
+            ),
+            env,
+        )
+    )
+    snapshot_hash = json.loads(create_response.body)["hash"]
+
+    invalid_response = _run(
+        handle_fetch(
+            FakeRequest(
+                method="GET",
+                url=f"https://example.com/api/snapshots/{snapshot_hash}/remove/{'B' * 32}",
+            ),
+            env,
+        )
+    )
+    assert invalid_response.status == 403
+    assert json.loads(invalid_response.body) == {"detail": "Invalid remove token."}

@@ -7,6 +7,7 @@ from pydantic import AnyUrl, BaseModel, ConfigDict, Field, StringConstraints, fi
 
 VideoHash = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{11}$")]
 SnapshotHash = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{8,64}$")]
+RemoveToken = Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{16,128}$")]
 
 
 def _empty_recommendation_items() -> list[RecommendationItem]:
@@ -74,6 +75,9 @@ class CreateSnapshotResponse(BaseModel):
 
     hash: SnapshotHash
     expires_at: datetime = Field(alias="expiresAt")
+    remove_token: RemoveToken = Field(alias="removeToken")
+    url: str | None = None
+    remove_url: str | None = Field(default=None, alias="removeUrl")
 
 
 class StoredSnapshot(BaseModel):

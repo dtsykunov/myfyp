@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from enum import Enum
+import hmac
 import json
 import math
 import secrets
@@ -20,6 +22,8 @@ from for_us_worker.types import WorkerEnv
 
 _HASH_ALPHABET = string.ascii_letters + string.digits
 _HASH_LENGTH = 12
+_REMOVE_TOKEN_ALPHABET = string.ascii_letters + string.digits + "_-"
+_REMOVE_TOKEN_LENGTH = 32
 _MAX_HASH_ATTEMPTS = 5
 _RETENTION_DAYS = 7
 
@@ -30,13 +34,29 @@ class SnapshotLookupResult:
     is_expired: bool
 
 
+@dataclass(frozen=True)
+class CreatedSnapshot:
+    hash: str
+    created_at: datetime
+    expires_at: datetime
+    payload: CreateSnapshotRequest
+    delete_token: str
+
+
+class DeleteSnapshotResult(Enum):
+    DELETED = "deleted"
+    NOT_FOUND = "not_found"
+    INVALID_TOKEN = "invalid_token"
+
+
 async def create_snapshot(
     env: WorkerEnv,
     payload: CreateSnapshotRequest,
     now: datetime | None = None,
-) -> StoredSnapshot:
+) -> CreatedSnapshot:
     created_at = _to_utc(now or datetime.now(timezone.utc))
     expires_at = created_at + timedelta(days=_RETENTION_DAYS)
+    remove_token = _generate_remove_token()
     payload_json = json.dumps(
         model_to_json_dict(payload, by_alias=True, exclude_none=True),
         separators=(",", ":"),
@@ -45,13 +65,21 @@ async def create_snapshot(
 
     for _ in range(_MAX_HASH_ATTEMPTS):
         snapshot_hash = _generate_hash()
-        inserted = await _try_insert_snapshot(env, snapshot_hash, created_at, expires_at, payload_json)
+        inserted = await _try_insert_snapshot(
+            env=env,
+            snapshot_hash=snapshot_hash,
+            created_at=created_at,
+            expires_at=expires_at,
+            payload_json=payload_json,
+            remove_token=remove_token,
+        )
         if inserted:
-            return StoredSnapshot(
+            return CreatedSnapshot(
                 hash=snapshot_hash,
                 created_at=created_at,
                 expires_at=expires_at,
                 payload=payload,
+                delete_token=remove_token,
             )
 
     raise RuntimeError("Unable to persist snapshot due to hash collisions.")
@@ -102,6 +130,32 @@ async def delete_snapshot_by_hash(env: WorkerEnv, snapshot_hash: str) -> None:
     ).bind(snapshot_hash).run()
 
 
+async def delete_snapshot_by_hash_and_token(
+    env: WorkerEnv,
+    snapshot_hash: str,
+    remove_token: str,
+) -> DeleteSnapshotResult:
+    row = await env.DB.prepare(
+        """
+        SELECT delete_token
+        FROM snapshots
+        WHERE hash = ?
+        """
+    ).bind(snapshot_hash).first()
+    mapping = _to_mapping(row)
+    if mapping is None:
+        return DeleteSnapshotResult.NOT_FOUND
+
+    stored_token = mapping.get("delete_token")
+    if not isinstance(stored_token, str):
+        return DeleteSnapshotResult.INVALID_TOKEN
+    if not hmac.compare_digest(stored_token, remove_token):
+        return DeleteSnapshotResult.INVALID_TOKEN
+
+    await delete_snapshot_by_hash(env, snapshot_hash)
+    return DeleteSnapshotResult.DELETED
+
+
 async def delete_expired_snapshots(env: WorkerEnv, now: datetime | None = None) -> int:
     effective_now = _to_utc(now or datetime.now(timezone.utc))
     result = await env.DB.prepare(
@@ -119,18 +173,29 @@ async def _try_insert_snapshot(
     created_at: datetime,
     expires_at: datetime,
     payload_json: str,
+    remove_token: str,
 ) -> bool:
     result = await env.DB.prepare(
         """
-        INSERT OR IGNORE INTO snapshots (hash, created_at, expires_at, payload_json)
-        VALUES (?, ?, ?, ?)
+        INSERT OR IGNORE INTO snapshots (hash, created_at, expires_at, payload_json, delete_token)
+        VALUES (?, ?, ?, ?, ?)
         """
-    ).bind(snapshot_hash, created_at.isoformat(), expires_at.isoformat(), payload_json).run()
+    ).bind(
+        snapshot_hash,
+        created_at.isoformat(),
+        expires_at.isoformat(),
+        payload_json,
+        remove_token,
+    ).run()
     return _extract_changes(result) > 0
 
 
 def _generate_hash() -> str:
     return "".join(secrets.choice(_HASH_ALPHABET) for _ in range(_HASH_LENGTH))
+
+
+def _generate_remove_token() -> str:
+    return "".join(secrets.choice(_REMOVE_TOKEN_ALPHABET) for _ in range(_REMOVE_TOKEN_LENGTH))
 
 
 def _to_utc(value: datetime) -> datetime:

@@ -20,7 +20,7 @@ from for_us_api.rendering import (
     render_home_html as _render_home_html,
     render_snapshot_html as _render_snapshot_html,
 )
-from for_us_api.store import SnapshotStore
+from for_us_api.store import DeleteSnapshotResult, SnapshotStore
 from for_us_api.userscript import load_userscript_text as _load_userscript_text
 
 DEFAULT_HTML_CACHE_ENTRIES = 2000
@@ -133,7 +133,21 @@ def create_app(
         allowed, reason = guard.allow_snapshot_create(_client_ip(request))
         if not allowed:
             raise HTTPException(status_code=429, detail=reason)
-        return snapshot_store.create_snapshot(payload)
+        created = snapshot_store.create_snapshot(payload)
+        snapshot_url = str(
+            request.url_for(
+                "render_snapshot_page",
+                snapshot_hash=created.hash,
+            )
+        )
+        remove_url = str(
+            request.url_for(
+                "remove_snapshot_by_token",
+                snapshot_hash=created.hash,
+                remove_token=created.remove_token,
+            )
+        )
+        return created.model_copy(update={"url": snapshot_url, "remove_url": remove_url})
 
     @app.get(
         "/api/snapshots/{snapshot_hash}",
@@ -178,6 +192,19 @@ def create_app(
             cached_html = _render_snapshot_html(snapshot)
             html_cache.set(snapshot.hash, cached_html, snapshot.expires_at)
         return HTMLResponse(cached_html, status_code=200, headers=cache_headers)
+
+    @app.get(
+        "/api/snapshots/{snapshot_hash}/remove/{remove_token}",
+        response_class=JSONResponse,
+        name="remove_snapshot_by_token",
+    )
+    def remove_snapshot_by_token(snapshot_hash: str, remove_token: str) -> JSONResponse:  # pyright: ignore[reportUnusedFunction]
+        result = snapshot_store.delete_snapshot(snapshot_hash=snapshot_hash, remove_token=remove_token)
+        if result is DeleteSnapshotResult.NOT_FOUND:
+            raise HTTPException(status_code=404, detail="Snapshot not found.")
+        if result is DeleteSnapshotResult.INVALID_TOKEN:
+            raise HTTPException(status_code=403, detail="Invalid remove token.")
+        return JSONResponse({"detail": "Snapshot removed."}, status_code=200)
 
     return app
 

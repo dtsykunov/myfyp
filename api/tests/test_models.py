@@ -78,11 +78,17 @@ def test_create_snapshot_response_aliases() -> None:
     response = CreateSnapshotResponse(
         hash="abc12345",
         expiresAt=datetime(2026, 2, 24, tzinfo=timezone.utc),
+        removeToken="A" * 32,
+        url="https://myfyp.link/abc12345",
+        removeUrl="https://myfyp.link/api/snapshots/abc12345/remove/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
     )
 
     dumped = response.model_dump(by_alias=True)
     assert dumped["hash"] == "abc12345"
     assert dumped["expiresAt"] == datetime(2026, 2, 24, tzinfo=timezone.utc)
+    assert dumped["removeToken"] == "A" * 32
+    assert str(dumped["url"]) == "https://myfyp.link/abc12345"
+    assert str(dumped["removeUrl"]).endswith("/remove/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
 
 def test_stored_snapshot_model() -> None:

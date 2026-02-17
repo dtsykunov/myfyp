@@ -23,11 +23,18 @@ from for_us_shared.models import (
 from for_us_shared.rendering import render_home_html, render_snapshot_html
 
 from for_us_worker.d1_abuse import allow_snapshot_create, allow_snapshot_read, cleanup_abuse_state
-from for_us_worker.d1_store import create_snapshot, delete_expired_snapshots, get_snapshot_by_hash
+from for_us_worker.d1_store import (
+    DeleteSnapshotResult,
+    create_snapshot,
+    delete_expired_snapshots,
+    delete_snapshot_by_hash_and_token,
+    get_snapshot_by_hash,
+)
 from for_us_worker.types import RequestLike, WorkerEnv
 
 _MAX_BODY_BYTES = 64 * 1024
 _SNAPSHOT_HASH_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
+_REMOVE_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
 _ABUSE_CONFIG = AbuseConfig()
 _USERSCRIPT_REDIRECT_URL = (
     "https://raw.githubusercontent.com/"
@@ -90,6 +97,10 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
         if request.method == "POST" and path == "/api/snapshots":
             return await _handle_create_snapshot(request, env)
 
+        remove_match = re.fullmatch(r"/api/snapshots/([A-Za-z0-9_-]{8,64})/remove/([A-Za-z0-9_-]{16,128})", path)
+        if request.method == "GET" and remove_match:
+            return await _handle_remove_snapshot(env, remove_match.group(1), remove_match.group(2))
+
         if request.method == "GET" and path.startswith("/api/snapshots/"):
             snapshot_hash = path.removeprefix("/api/snapshots/")
             if not _SNAPSHOT_HASH_PATTERN.fullmatch(snapshot_hash):
@@ -126,15 +137,43 @@ async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> Respo
     body_text = await _read_body_with_limit(request, _MAX_BODY_BYTES)
     payload = parse_create_snapshot_request_json(body_text)
     stored_snapshot = await create_snapshot(env, payload)
+    base_url = _base_url(request)
+    snapshot_url = f"{base_url}/{stored_snapshot.hash}"
+    remove_url = f"{base_url}/api/snapshots/{stored_snapshot.hash}/remove/{stored_snapshot.delete_token}"
 
     response_payload = model_to_json_dict(
         CreateSnapshotResponse(
             hash=stored_snapshot.hash,
             expiresAt=stored_snapshot.expires_at,
+            removeToken=stored_snapshot.delete_token,
+            url=snapshot_url,
+            removeUrl=remove_url,
         ),
         by_alias=True,
     )
     return json_response(response_payload, status=201)
+
+
+async def _handle_remove_snapshot(
+    env: WorkerEnv,
+    snapshot_hash: str,
+    remove_token: str,
+) -> ResponseSpec:
+    if not _SNAPSHOT_HASH_PATTERN.fullmatch(snapshot_hash):
+        return json_response({"detail": "Snapshot not found."}, status=404)
+    if not _REMOVE_TOKEN_PATTERN.fullmatch(remove_token):
+        return json_response({"detail": "Invalid remove token."}, status=403)
+
+    result = await delete_snapshot_by_hash_and_token(
+        env=env,
+        snapshot_hash=snapshot_hash,
+        remove_token=remove_token,
+    )
+    if result is DeleteSnapshotResult.NOT_FOUND:
+        return json_response({"detail": "Snapshot not found."}, status=404)
+    if result is DeleteSnapshotResult.INVALID_TOKEN:
+        return json_response({"detail": "Invalid remove token."}, status=403)
+    return json_response({"detail": "Snapshot removed."}, status=200)
 
 
 async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_hash: str) -> ResponseSpec:
@@ -229,3 +268,8 @@ def _is_abuse_limiting_enabled(env: WorkerEnv) -> bool:
     raw_value = getattr(env, "ABUSE_LIMITING_ENABLED", "1")
     normalized = str(raw_value).strip().lower()
     return normalized not in {"0", "false", "no", "off"}
+
+
+def _base_url(request: RequestLike) -> str:
+    parsed = urlparse(request.url)
+    return f"{parsed.scheme}://{parsed.netloc}"

@@ -27,7 +27,11 @@ class _StoreStub:
 
     def create_snapshot(self, payload: CreateSnapshotRequest) -> CreateSnapshotResponse:
         del payload
-        return CreateSnapshotResponse(hash="Abcd1234", expiresAt=datetime(2026, 2, 24, tzinfo=timezone.utc))
+        return CreateSnapshotResponse(
+            hash="Abcd1234",
+            expiresAt=datetime(2026, 2, 24, tzinfo=timezone.utc),
+            removeToken="A" * 32,
+        )
 
     def get_snapshot(self, snapshot_hash: str) -> tuple[StoredSnapshot | None, bool]:
         del snapshot_hash

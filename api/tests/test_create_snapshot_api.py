@@ -48,6 +48,12 @@ def test_create_snapshot_persists_payload_and_returns_response(tmp_path: Path) -
     response_body = response.json()
     assert "hash" in response_body
     assert len(response_body["hash"]) == 12
+    assert "removeToken" in response_body
+    assert len(response_body["removeToken"]) == 32
+    assert response_body["url"].endswith(f'/{response_body["hash"]}')
+    assert response_body["removeUrl"].endswith(
+        f'/api/snapshots/{response_body["hash"]}/remove/{response_body["removeToken"]}'
+    )
     expires_at = datetime.fromisoformat(response_body["expiresAt"])
     assert expires_at.tzinfo is not None
 

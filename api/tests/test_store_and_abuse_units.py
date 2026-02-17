@@ -12,7 +12,7 @@ from for_us_api.formatting import format_compact_views, format_relative_time, to
 from for_us_api.http_cache import if_none_match_matches
 from for_us_api.models import CreateSnapshotRequest
 from for_us_api.models import RecommendationItem, StoredSnapshot
-from for_us_api.store import SnapshotStore
+from for_us_api.store import DeleteSnapshotResult, SnapshotStore
 
 
 def _sample_payload() -> CreateSnapshotRequest:
@@ -118,8 +118,26 @@ def test_try_insert_snapshot_handles_duplicate_hash(tmp_path: Path) -> None:
     expires_at = datetime(2026, 2, 24, 11, 0, tzinfo=timezone.utc)
     payload_json = '{"videos":[],"shorts":[]}'
 
-    assert store._try_insert_snapshot("dupeHash1", created_at, expires_at, payload_json) is True
-    assert store._try_insert_snapshot("dupeHash1", created_at, expires_at, payload_json) is False
+    assert (
+        store._try_insert_snapshot(
+            "dupeHash1",
+            created_at,
+            expires_at,
+            payload_json,
+            "A" * 32,
+        )
+        is True
+    )
+    assert (
+        store._try_insert_snapshot(
+            "dupeHash1",
+            created_at,
+            expires_at,
+            payload_json,
+            "A" * 32,
+        )
+        is False
+    )
 
 
 def test_get_snapshot_reads_from_db_and_populates_cache(tmp_path: Path) -> None:
@@ -160,3 +178,18 @@ def test_register_write_triggers_cleanup_and_cache_eviction(tmp_path: Path, monk
 
     assert "Abcd1234" not in store._snapshot_cache
     assert "Efgh5678" in store._snapshot_cache
+
+
+def test_delete_snapshot_requires_valid_remove_token(tmp_path: Path) -> None:
+    store = SnapshotStore(database_path=tmp_path / "snapshots.db")
+    store.initialize()
+    created = store.create_snapshot(_sample_payload())
+
+    invalid = store.delete_snapshot(created.hash, "B" * 32)
+    assert invalid is DeleteSnapshotResult.INVALID_TOKEN
+
+    deleted = store.delete_snapshot(created.hash, created.remove_token)
+    assert deleted is DeleteSnapshotResult.DELETED
+
+    missing = store.delete_snapshot(created.hash, created.remove_token)
+    assert missing is DeleteSnapshotResult.NOT_FOUND
