@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
-// @namespace    https://for-us-page.local
-// @version      0.1.10
+// @namespace    https://myfyp.link
+// @version      0.1.11
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @grant        GM_registerMenuCommand
+// @downloadURL  https://myfyp.link/myfyp.user.js
+// @updateURL    https://myfyp.link/myfyp.user.js
 // @connect      *
 // ==/UserScript==
 
@@ -35,7 +37,7 @@
   };
   const API_BASE_URL_STORAGE_KEY = "forUsPage.apiBaseUrl";
   const DEBUG_STORAGE_KEY = "forUsPage.debug";
-  const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+  const DEFAULT_API_BASE_URL = "https://myfyp.link";
   const TOAST_ID = "for-us-page-toast";
   const CHANNEL_PARSE_WARNING_LIMIT = 5;
   const pageWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;

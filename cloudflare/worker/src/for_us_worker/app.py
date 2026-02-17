@@ -20,7 +20,7 @@ from for_us_shared.models import (
     model_to_json_dict,
     parse_create_snapshot_request_json,
 )
-from for_us_shared.rendering import render_snapshot_html
+from for_us_shared.rendering import render_home_html, render_snapshot_html
 
 from for_us_worker.d1_abuse import allow_snapshot_create, allow_snapshot_read, cleanup_abuse_state
 from for_us_worker.d1_store import create_snapshot, delete_expired_snapshots, get_snapshot_by_hash
@@ -29,6 +29,10 @@ from for_us_worker.types import RequestLike, WorkerEnv
 _MAX_BODY_BYTES = 64 * 1024
 _SNAPSHOT_HASH_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 _ABUSE_CONFIG = AbuseConfig()
+_USERSCRIPT_REDIRECT_URL = (
+    "https://raw.githubusercontent.com/"
+    "dtsykunov/myfyp/master/extension/userscript/myfyp.user.js"
+)
 _VALIDATION_ERRORS: tuple[type[Exception], ...] = (
     cast(type[Exception], PydanticValidationError),
     cast(type[Exception], PydanticV1ValidationError),
@@ -69,6 +73,19 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
 
         if request.method == "GET" and path == "/health":
             return json_response({"status": "ok"})
+
+        if request.method == "GET" and path == "/":
+            return html_response(render_home_html("https://myfyp.link/myfyp.user.js"))
+
+        if request.method == "GET" and path == "/myfyp.user.js":
+            return ResponseSpec(
+                status=302,
+                body="",
+                headers={
+                    "location": _USERSCRIPT_REDIRECT_URL,
+                    "cache-control": "no-cache",
+                },
+            )
 
         if request.method == "POST" and path == "/api/snapshots":
             return await _handle_create_snapshot(request, env)

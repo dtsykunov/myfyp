@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from pytest import MonkeyPatch
 
 from for_us_api.app import create_app
 from for_us_api.models import CreateSnapshotRequest, RecommendationItem
@@ -94,7 +95,7 @@ def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> 
         page_response = client.get(f"/{snapshot_hash}")
 
     assert page_response.status_code == 200
-    assert "For Us Page by" in page_response.text
+    assert "myfyp (my for you page) by" in page_response.text
     assert 'href="https://dtsykunov.com/"' in page_response.text
     assert "Taken at: <code>2026-02-17 11:00:00 UTC</code>" in page_response.text
     assert "https://www.youtube.com/watch?v=lzChIIJMpGk" in page_response.text
@@ -186,6 +187,33 @@ def test_get_snapshot_api_returns_404_for_unknown_hash(tmp_path: Path) -> None:
         response = client.get("/api/snapshots/unknown123")
 
     assert response.status_code == 404
+
+
+def test_root_page_includes_installation_instructions(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "myfyp (my for you page) by" in response.text
+    assert "Install and Use" in response.text
+    assert 'href="http://testserver/myfyp.user.js"' in response.text
+
+
+def test_userscript_endpoint_serves_userscript(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
+    database_path = tmp_path / "snapshots.db"
+    userscript_path = tmp_path / "myfyp.user.js"
+    userscript_text = "// ==UserScript==\n// @name Test\n// ==/UserScript=="
+    userscript_path.write_text(userscript_text, encoding="utf-8")
+    monkeypatch.setenv("FOR_US_USERSCRIPT_PATH", str(userscript_path))
+
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        response = client.get("/myfyp.user.js")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/javascript")
+    assert response.headers["cache-control"] == "no-cache"
+    assert response.text == userscript_text
 
 
 def test_expired_snapshot_is_cleaned_up_and_returns_404(tmp_path: Path) -> None:

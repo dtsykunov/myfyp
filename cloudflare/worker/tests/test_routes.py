@@ -23,6 +23,26 @@ def test_health_route() -> None:
     assert response.body == '{"status": "ok"}'
 
 
+def test_root_route_renders_installation_page() -> None:
+    response = _run(handle_fetch(FakeRequest(method="GET", url="https://example.com/"), FakeEnv()))
+    assert response.status == 200
+    assert "myfyp (my for you page) by" in response.body
+    assert "Install and Use" in response.body
+    assert "https://myfyp.link/myfyp.user.js" in response.body
+
+
+def test_userscript_route_redirects_to_canonical_script() -> None:
+    response = _run(
+        handle_fetch(
+            FakeRequest(method="GET", url="https://example.com/myfyp.user.js"),
+            FakeEnv(),
+        )
+    )
+    assert response.status == 302
+    assert response.headers["location"].endswith("/extension/userscript/myfyp.user.js")
+    assert response.headers["cache-control"] == "no-cache"
+
+
 def test_create_and_get_snapshot_routes() -> None:
     env = FakeEnv()
     create_response = _run(
@@ -97,7 +117,7 @@ def test_render_hash_route() -> None:
         )
     )
     assert page_response.status == 200
-    assert "For Us Page by" in page_response.body
+    assert "myfyp (my for you page) by" in page_response.body
 
 
 def test_create_rate_limit() -> None:

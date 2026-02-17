@@ -16,8 +16,12 @@ from for_us_api.http_cache import (
     if_none_match_matches as _if_none_match_matches,
 )
 from for_us_api.models import CreateSnapshotRequest, CreateSnapshotResponse
-from for_us_api.rendering import render_snapshot_html as _render_snapshot_html
+from for_us_api.rendering import (
+    render_home_html as _render_home_html,
+    render_snapshot_html as _render_snapshot_html,
+)
 from for_us_api.store import SnapshotStore
+from for_us_api.userscript import load_userscript_text as _load_userscript_text
 
 DEFAULT_HTML_CACHE_ENTRIES = 2000
 
@@ -106,6 +110,23 @@ def create_app(
     @app.get("/health")
     def health() -> dict[str, str]:  # pyright: ignore[reportUnusedFunction]
         return {"status": "ok"}
+
+    @app.get("/myfyp.user.js", name="get_userscript")
+    def get_userscript() -> Response:  # pyright: ignore[reportUnusedFunction]
+        try:
+            userscript_text = _load_userscript_text()
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        return Response(
+            content=userscript_text,
+            media_type="text/javascript",
+            headers={"Cache-Control": "no-cache"},
+        )
+
+    @app.get("/", response_class=HTMLResponse)
+    def render_home_page(request: Request) -> HTMLResponse:  # pyright: ignore[reportUnusedFunction]
+        userscript_url = str(request.url_for("get_userscript"))
+        return HTMLResponse(_render_home_html(userscript_url), status_code=200)
 
     @app.post("/api/snapshots", status_code=201, response_model=CreateSnapshotResponse)
     def create_snapshot(request: Request, payload: CreateSnapshotRequest) -> CreateSnapshotResponse:  # pyright: ignore[reportUnusedFunction]

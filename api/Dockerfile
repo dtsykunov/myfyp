@@ -9,10 +9,11 @@ RUN apt-get update \
     && apt-get install --no-install-recommends -y libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml ./pyproject.toml
-COPY src ./src
-COPY tests ./tests
-COPY scripts ./scripts
+COPY api/pyproject.toml ./pyproject.toml
+COPY api/src ./src
+COPY api/tests ./tests
+COPY api/scripts ./scripts
+COPY extension/userscript ./extension/userscript
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e ".[dev]" \

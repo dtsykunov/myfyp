@@ -1,7 +1,8 @@
 services:
   api:
     build:
-      context: ./api
+      context: .
+      dockerfile: api/Dockerfile
     image: for-us-api:dev
     command: ./scripts/run-api.sh
     ports:
@@ -11,22 +12,26 @@ services:
       - ./api/tests:/app/tests
       - ./api/scripts:/app/scripts
       - ./api/pyproject.toml:/app/pyproject.toml:ro
+      - ./extension/userscript:/app/extension/userscript:ro
 
   api-test:
     build:
-      context: ./api
+      context: .
+      dockerfile: api/Dockerfile
     image: for-us-api:dev
     command: ./scripts/run-tests.sh
 
   api-lint:
     build:
-      context: ./api
+      context: .
+      dockerfile: api/Dockerfile
     image: for-us-api:dev
     command: ./scripts/run-lint.sh
 
   api-typecheck:
     build:
-      context: ./api
+      context: .
+      dockerfile: api/Dockerfile
     image: for-us-api:dev
     command: ./scripts/run-typecheck.sh
 

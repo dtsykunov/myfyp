@@ -213,5 +213,5 @@ def test_shared_rendering_helper_branches() -> None:
         payload=_sample_payload(),
     )
     rendered = rendering.render_snapshot_html(snapshot)
-    assert "For Us Page by" in rendered
+    assert "myfyp (my for you page) by" in rendered
     assert "Taken at: <code>2026-02-17 11:00:00 UTC</code>" in rendered

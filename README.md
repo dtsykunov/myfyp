@@ -48,7 +48,7 @@ This project lets a user capture their current YouTube home feed and share it wi
 ## Current Scaffold Status
 
 - Extension:
-  - Userscript shell exists (`extension/userscript/for-us-page.user.js`).
+  - Userscript shell exists (`extension/userscript/myfyp.user.js`).
   - YouTube parsing + API upload behavior are TODO.
 - API:
   - FastAPI app scaffold exists with `GET /health`.

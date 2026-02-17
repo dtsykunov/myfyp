@@ -11,6 +11,140 @@ from for_us_shared.formatting import (
 )
 from for_us_shared.models import RecommendationItem, StoredSnapshot
 
+
+def render_home_html(userscript_url: str) -> str:
+    escaped_userscript_url = html.escape(userscript_url)
+    return f"""<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+    <title>myfyp (my for you page) by dtsykunov</title>
+    <style>
+      :root {{
+        --bg: #0f0f0f;
+        --text: #f1f1f1;
+        --muted: #aaaaaa;
+      }}
+
+      * {{
+        box-sizing: border-box;
+      }}
+
+      body {{
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, sans-serif;
+      }}
+
+      main {{
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }}
+
+      .top-header {{
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 12px;
+      }}
+
+      .brand-logo {{
+        width: 29px;
+        height: 20px;
+        flex-shrink: 0;
+      }}
+
+      .brand-logo svg {{
+        width: 29px;
+        height: 20px;
+        display: block;
+      }}
+
+      h1 {{
+        margin: 0;
+        font-size: 28px;
+      }}
+
+      .title-link {{
+        color: #2c9cd3;
+        text-decoration: underline;
+        font-family: "Zen Kaku Gothic New", sans-serif;
+        letter-spacing: .01em;
+        font-weight: 300;
+        font-style: italic;
+        font-optical-sizing: auto;
+        text-rendering: optimizeLegibility;
+      }}
+
+      .page-description {{
+        margin: 0 0 10px;
+        color: #c6c6c6;
+        font-size: 14px;
+        line-height: 1.45;
+      }}
+
+      .card {{
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 14px;
+        padding: 18px;
+        background: #181818;
+      }}
+
+      .section-title {{
+        margin: 0 0 12px;
+        font-size: 20px;
+      }}
+
+      .steps {{
+        margin: 0;
+        padding-left: 20px;
+        line-height: 1.6;
+      }}
+
+      .steps code {{
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }}
+
+      .userscript-link {{
+        color: #8ab4ff;
+        word-break: break-all;
+      }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <header class="top-header">
+        <span class="brand-logo" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="29" height="20" viewBox="0 0 29 20" focusable="false" aria-hidden="true">
+            <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
+            <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
+          </svg>
+        </span>
+        <h1>myfyp (my for you page) by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+      </header>
+      <p class="page-description">Share a personal YouTube recommendation page snapshot with a temporary link.</p>
+      <section class="card">
+        <h2 class="section-title">Install and Use</h2>
+        <ol class="steps">
+          <li>Install Tampermonkey (or another userscript manager).</li>
+          <li>Open and install the userscript: <a class="userscript-link" href="{escaped_userscript_url}">{escaped_userscript_url}</a>.</li>
+          <li>Open <code>https://www.youtube.com/</code>.</li>
+          <li>From Tampermonkey menu, run <code>For Us Page: Upload Snapshot</code>, or run <code>window.forUsPage.uploadLatestSnapshot()</code> in browser console.</li>
+          <li>Open the returned snapshot link to view the rendered page.</li>
+        </ol>
+      </section>
+    </main>
+  </body>
+</html>
+"""
+
+
 def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     metadata_reference_time = _resolve_metadata_reference_time(snapshot)
     videos = _render_video_grid(snapshot.payload.videos, metadata_reference_time)
@@ -25,7 +159,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
-    <title>For Us Page by dtsykunov - {escaped_hash}</title>
+    <title>myfyp (my for you page) by dtsykunov - {escaped_hash}</title>
     <style>
       :root {{
         --bg: #0f0f0f;
@@ -426,7 +560,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
             <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
           </svg>
         </span>
-        <h1>For Us Page by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+        <h1>myfyp (my for you page) by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
       <div class="meta-stack">
         <p class="page-description">Snapshot of a personal YouTube recommendations page captured at a specific moment in time.</p>
@@ -667,4 +801,3 @@ def _render_stats_text(item: RecommendationItem, metadata_reference_time: dateti
 def _resolve_metadata_reference_time(snapshot: StoredSnapshot) -> datetime:
     reference_time = snapshot.payload.captured_at or snapshot.created_at
     return _to_utc(reference_time)
-
