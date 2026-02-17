@@ -19,5 +19,8 @@ jobs:
       - name: Run API lint in container
         run: docker compose run --rm api-lint
 
+      - name: Run API type checks in container
+        run: docker compose run --rm api-typecheck
+
       - name: Run API tests in container
         run: docker compose run --rm api-test

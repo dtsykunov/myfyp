@@ -33,6 +33,7 @@
           default = pkgs.mkShell {
             packages = [
               python
+              pkgs.pyright
               pkgs.docker
               pkgs.docker-compose
             ];

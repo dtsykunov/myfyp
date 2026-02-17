@@ -44,6 +44,10 @@ This file defines working rules for AI agents and human contributors in this rep
    - Local runs must use the repository Nix flake dev shell (`nix develop`) as the default workflow.
    - CI must use Docker/Docker Compose.
    - Keep local (Nix) and CI (Docker) environments as similar as practical (language/runtime versions, dependencies, and commands).
+9. Use strict typing for all Python code:
+   - Add explicit type hints for public and internal functions, methods, and data structures.
+   - Avoid `Any` unless there is a documented and justified boundary where stricter typing is not practical.
+   - Keep Python type checks passing in strict mode (pyright strict).
 
 ## Task Execution Protocol (Required)
 
@@ -64,7 +68,7 @@ For each non-trivial task, the agent must follow this sequence:
    - Present the proposed plan to the user and confirm it is acceptable before implementation.
 6. Implement:
    - Execute the approved TODOs.
-   - Run required checks (tests, lint, formatting, type checks where applicable) using `nix develop` locally.
+   - Run required checks (tests, lint, formatting, and strict type checks) using `nix develop` locally.
    - Do not mark tasks done until all TODOs are completed and checks pass.
 7. Commit:
    - Commit only after successful checks.
@@ -75,6 +79,7 @@ For each non-trivial task, the agent must follow this sequence:
 - Behavior matches requirements.
 - Tests added/updated and passing.
 - Lints/format checks passing.
+- Strict Python type checks passing.
 - Validation is reproducible locally and in CI (preferably via Docker workflow).
 - Boundaries between extension/API/frontend remain clean.
 - No unnecessary complexity added.

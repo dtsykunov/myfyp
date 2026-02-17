@@ -6,11 +6,10 @@ def create_app() -> FastAPI:
     app = FastAPI(title="For Us API", version="0.1.0")
 
     @app.get("/health")
-    def health() -> dict[str, str]:
+    def health() -> dict[str, str]:  # pyright: ignore[reportUnusedFunction]
         return {"status": "ok"}
 
     return app
 
 
 app = create_app()
-

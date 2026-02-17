@@ -5,6 +5,10 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml ./pyproject.toml
 COPY src ./src
 COPY tests ./tests

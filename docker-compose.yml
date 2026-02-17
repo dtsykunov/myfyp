@@ -23,3 +23,9 @@ services:
       context: ./api
     image: for-us-api:dev
     command: ./scripts/run-lint.sh
+
+  api-typecheck:
+    build:
+      context: ./api
+    image: for-us-api:dev
+    command: ./scripts/run-typecheck.sh

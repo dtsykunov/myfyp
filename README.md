@@ -51,8 +51,9 @@ This project lets a user capture their current YouTube home feed and share it wi
   - YouTube parsing + API upload behavior are TODO.
 - API:
   - FastAPI app scaffold exists with `GET /health`.
-  - Pyproject-based packaging and pytest setup are configured.
-  - One baseline test validates API boot and health endpoint.
+  - Typed request/response/domain models are defined for snapshot payloads.
+  - Pyproject-based packaging, lint, strict type-checking, and pytest setup are configured.
+  - Baseline tests validate API boot and model validation rules.
 
 ## Run and Test
 
@@ -61,6 +62,7 @@ This project lets a user capture their current YouTube home feed and share it wi
 ```bash
 nix develop --command sh -c "cd api && ./scripts/run-tests.sh"
 nix develop --command sh -c "cd api && ./scripts/run-lint.sh"
+nix develop --command sh -c "cd api && ./scripts/run-typecheck.sh"
 nix develop --command sh -c "cd api && ./scripts/run-api.sh"
 ```
 
@@ -68,6 +70,7 @@ nix develop --command sh -c "cd api && ./scripts/run-api.sh"
 
 ```bash
 docker compose run --rm api-lint
+docker compose run --rm api-typecheck
 docker compose run --rm api-test
 docker compose up api
 ```
