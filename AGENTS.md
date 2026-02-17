@@ -48,6 +48,10 @@ This file defines working rules for AI agents and human contributors in this rep
    - Add explicit type hints for public and internal functions, methods, and data structures.
    - Avoid `Any` unless there is a documented and justified boundary where stricter typing is not practical.
    - Keep Python type checks passing in strict mode (pyright strict).
+10. Keep automated test coverage high and enforced:
+   - Add tests for new behavior and critical branches, not only happy paths.
+   - Maintain strict coverage thresholds in test commands and CI, and raise them when practical.
+   - Treat coverage regressions as failures unless explicitly approved by the user.
 
 ## Task Execution Protocol (Required)
 
@@ -78,6 +82,7 @@ For each non-trivial task, the agent must follow this sequence:
 
 - Behavior matches requirements.
 - Tests added/updated and passing.
+- Coverage remains high and does not regress (per enforced thresholds).
 - Lints/format checks passing.
 - Strict Python type checks passing.
 - Validation is reproducible locally and in CI (preferably via Docker workflow).

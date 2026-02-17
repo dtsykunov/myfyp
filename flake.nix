@@ -24,6 +24,7 @@
               fastapi
               httpx
               pytest
+              pytest-cov
               ruff
               uvicorn
             ]
