@@ -17,4 +17,5 @@ result
 result-*
 node_modules/
 .wrangler/
+cloudflare/worker/wrangler.production.toml
 coverage/

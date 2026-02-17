@@ -25,3 +25,21 @@ nix develop --command sh -c "./cloudflare/worker/scripts/run-tests.sh"
 npx wrangler d1 migrations apply for-us-page --local
 npx wrangler d1 migrations apply for-us-page --remote
 ```
+
+## GitHub Actions Deployment
+
+`Deploy Worker` workflow applies D1 migrations and deploys the worker from CI.
+
+Use a protected GitHub environment named `production` and configure:
+
+- Secrets:
+  - `CLOUDFLARE_API_TOKEN`
+  - `CLOUDFLARE_ACCOUNT_ID`
+- Variables:
+  - `CF_WORKER_NAME`
+  - `CF_D1_DATABASE_NAME`
+  - `CF_D1_DATABASE_ID`
+  - `CF_ROUTE_PATTERN` (optional; set with `CF_ZONE_ID` for custom domain routing)
+  - `CF_ZONE_ID` (optional; set with `CF_ROUTE_PATTERN`)
+
+The workflow renders `cloudflare/worker/wrangler.production.toml` at runtime and never stores credentials in the repository.
