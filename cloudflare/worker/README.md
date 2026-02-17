@@ -1,7 +1,12 @@
-# Cloudflare Worker (Reset)
+# Cloudflare Worker (Python)
 
-This directory was intentionally reset to start over.
+This Worker target reuses Python logic from `api/src/for_us_api`.
 
-Next step: rebuild Cloudflare deployment by extracting reusable shared core logic from `api/src` and adding thin runtime adapters for:
-- FastAPI + SQLite (`api`)
-- Cloudflare Worker + D1 (`cloudflare/worker`)
+Current reuse:
+- Pydantic payload models (`for_us_api.models`)
+- ETag/cache helpers (`for_us_api.http_cache`)
+- HTML rendering (`for_us_api.rendering`)
+
+Adapter-specific code in this folder:
+- Cloudflare request/response entrypoint
+- D1 persistence adapter
