@@ -9,7 +9,11 @@ from pydantic import ValidationError
 
 from for_us_shared.abuse import AbuseConfig
 from for_us_shared.http_cache import build_cache_headers, build_etag, if_none_match_matches
-from for_us_shared.models import CreateSnapshotRequest, CreateSnapshotResponse
+from for_us_shared.models import (
+    CreateSnapshotResponse,
+    model_to_json_dict,
+    parse_create_snapshot_request_json,
+)
 from for_us_shared.rendering import render_snapshot_html
 
 from for_us_worker.d1_abuse import allow_snapshot_create, allow_snapshot_read, cleanup_abuse_state
@@ -92,13 +96,16 @@ async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> Respo
         return json_response({"detail": create_decision.reason}, status=429)
 
     body_text = await _read_body_with_limit(request, _MAX_BODY_BYTES)
-    payload = CreateSnapshotRequest.model_validate_json(body_text)
+    payload = parse_create_snapshot_request_json(body_text)
     stored_snapshot = await create_snapshot(env, payload)
 
-    response_payload = CreateSnapshotResponse(
-        hash=stored_snapshot.hash,
-        expiresAt=stored_snapshot.expires_at,
-    ).model_dump(by_alias=True, mode="json")
+    response_payload = model_to_json_dict(
+        CreateSnapshotResponse(
+            hash=stored_snapshot.hash,
+            expiresAt=stored_snapshot.expires_at,
+        ),
+        by_alias=True,
+    )
     return json_response(response_payload, status=201)
 
 
@@ -123,7 +130,7 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
         return ResponseSpec(status=304, body="", headers=cache_headers)
 
     return json_response(
-        lookup.snapshot.payload.model_dump(by_alias=True, mode="json", exclude_none=True),
+        model_to_json_dict(lookup.snapshot.payload, by_alias=True, exclude_none=True),
         headers=cache_headers,
     )
 

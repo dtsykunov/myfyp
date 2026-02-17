@@ -8,7 +8,12 @@ import secrets
 import string
 from typing import cast
 
-from for_us_shared.models import CreateSnapshotRequest, StoredSnapshot
+from for_us_shared.models import (
+    CreateSnapshotRequest,
+    StoredSnapshot,
+    model_to_json_dict,
+    parse_create_snapshot_request_json,
+)
 
 from for_us_worker.types import WorkerEnv
 
@@ -32,7 +37,7 @@ async def create_snapshot(
     created_at = _to_utc(now or datetime.now(timezone.utc))
     expires_at = created_at + timedelta(days=_RETENTION_DAYS)
     payload_json = json.dumps(
-        payload.model_dump(by_alias=True, mode="json", exclude_none=True),
+        model_to_json_dict(payload, by_alias=True, exclude_none=True),
         separators=(",", ":"),
         sort_keys=True,
     )
@@ -71,7 +76,7 @@ async def get_snapshot_by_hash(
 
     created_at = _parse_datetime(_require_str(mapping, "created_at"))
     expires_at = _parse_datetime(_require_str(mapping, "expires_at"))
-    payload = CreateSnapshotRequest.model_validate_json(_require_str(mapping, "payload_json"))
+    payload = parse_create_snapshot_request_json(_require_str(mapping, "payload_json"))
 
     snapshot = StoredSnapshot(
         hash=_require_str(mapping, "hash"),

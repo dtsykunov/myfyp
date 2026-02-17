@@ -8,7 +8,7 @@ Shared runtime modules:
 - HTML rendering (`for_us_shared.rendering`)
 
 Runtime target:
-- Python Worker packaging is pinned to Python 3.12 compatibility.
+- Python Worker packaging targets Python 3.13 with a Worker-compatible Pydantic runtime.
 
 Adapter-specific code in this folder:
 - Cloudflare request/response entrypoint (`src/entry.py`)
