@@ -216,6 +216,16 @@ def test_userscript_endpoint_serves_userscript(tmp_path: Path, monkeypatch: Monk
     assert response.text == userscript_text
 
 
+def test_privacy_page_is_available(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        response = client.get("/privacy")
+
+    assert response.status_code == 200
+    assert "Privacy Notice" in response.text
+    assert "Snapshots are automatically deleted after 7 days." in response.text
+
+
 def test_expired_snapshot_is_cleaned_up_and_returns_404(tmp_path: Path) -> None:
     database_path = tmp_path / "snapshots.db"
     store = SnapshotStore(database_path=database_path)

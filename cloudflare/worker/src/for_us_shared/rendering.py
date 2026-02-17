@@ -145,6 +145,85 @@ def render_home_html(userscript_url: str) -> str:
 """
 
 
+def render_privacy_html() -> str:
+    return """<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>myfyp Privacy Notice</title>
+    <style>
+      :root {
+        --bg: #0f0f0f;
+        --text: #f1f1f1;
+        --muted: #aaaaaa;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, sans-serif;
+      }
+
+      main {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: 28px;
+      }
+
+      h2 {
+        margin: 22px 0 8px;
+        font-size: 20px;
+      }
+
+      p, li {
+        color: #d0d0d0;
+        line-height: 1.55;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Privacy Notice</h1>
+      <p>This service stores a temporary snapshot of a user's YouTube recommendations so it can be shared by link.</p>
+
+      <h2>What Data Is Stored</h2>
+      <ul>
+        <li>Video and Shorts identifiers and parsed metadata submitted by the userscript.</li>
+        <li>Snapshot creation timestamp and optional source page URL.</li>
+      </ul>
+
+      <h2>Retention</h2>
+      <p>Snapshots are automatically deleted after 7 days.</p>
+
+      <h2>Removal</h2>
+      <p>Each created snapshot includes a private remove link that can immediately delete it.</p>
+
+      <h2>Purpose</h2>
+      <p>Data is used only to render the shared snapshot page and is not used for advertising.</p>
+
+      <p class="muted">Last updated: February 17, 2026</p>
+    </main>
+  </body>
+</html>
+"""
+
+
 def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     metadata_reference_time = _resolve_metadata_reference_time(snapshot)
     videos = _render_video_grid(snapshot.payload.videos, metadata_reference_time)

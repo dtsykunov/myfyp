@@ -215,3 +215,6 @@ def test_shared_rendering_helper_branches() -> None:
     rendered = rendering.render_snapshot_html(snapshot)
     assert "myfyp (my for you page) by" in rendered
     assert "Taken at: <code>2026-02-17 11:00:00 UTC</code>" in rendered
+
+    privacy_rendered = rendering.render_privacy_html()
+    assert "Privacy Notice" in privacy_rendered

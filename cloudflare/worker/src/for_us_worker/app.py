@@ -20,7 +20,7 @@ from for_us_shared.models import (
     model_to_json_dict,
     parse_create_snapshot_request_json,
 )
-from for_us_shared.rendering import render_home_html, render_snapshot_html
+from for_us_shared.rendering import render_home_html, render_privacy_html, render_snapshot_html
 
 from for_us_worker.d1_abuse import allow_snapshot_create, allow_snapshot_read, cleanup_abuse_state
 from for_us_worker.d1_store import (
@@ -83,6 +83,9 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
 
         if request.method == "GET" and path == "/":
             return html_response(render_home_html("https://myfyp.link/myfyp.user.js"))
+
+        if request.method == "GET" and path == "/privacy":
+            return html_response(render_privacy_html())
 
         if request.method == "GET" and path == "/myfyp.user.js":
             return ResponseSpec(

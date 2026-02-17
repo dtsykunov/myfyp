@@ -18,6 +18,7 @@ from for_us_api.http_cache import (
 from for_us_api.models import CreateSnapshotRequest, CreateSnapshotResponse
 from for_us_api.rendering import (
     render_home_html as _render_home_html,
+    render_privacy_html as _render_privacy_html,
     render_snapshot_html as _render_snapshot_html,
 )
 from for_us_api.store import DeleteSnapshotResult, SnapshotStore
@@ -127,6 +128,10 @@ def create_app(
     def render_home_page(request: Request) -> HTMLResponse:  # pyright: ignore[reportUnusedFunction]
         userscript_url = str(request.url_for("get_userscript"))
         return HTMLResponse(_render_home_html(userscript_url), status_code=200)
+
+    @app.get("/privacy", response_class=HTMLResponse)
+    def render_privacy_page() -> HTMLResponse:  # pyright: ignore[reportUnusedFunction]
+        return HTMLResponse(_render_privacy_html(), status_code=200)
 
     @app.post("/api/snapshots", status_code=201, response_model=CreateSnapshotResponse)
     def create_snapshot(request: Request, payload: CreateSnapshotRequest) -> CreateSnapshotResponse:  # pyright: ignore[reportUnusedFunction]

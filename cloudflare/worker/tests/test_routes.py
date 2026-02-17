@@ -31,6 +31,13 @@ def test_root_route_renders_installation_page() -> None:
     assert "https://myfyp.link/myfyp.user.js" in response.body
 
 
+def test_privacy_route_renders_privacy_page() -> None:
+    response = _run(handle_fetch(FakeRequest(method="GET", url="https://example.com/privacy"), FakeEnv()))
+    assert response.status == 200
+    assert "Privacy Notice" in response.body
+    assert "Snapshots are automatically deleted after 7 days." in response.body
+
+
 def test_userscript_route_redirects_to_canonical_script() -> None:
     response = _run(
         handle_fetch(
