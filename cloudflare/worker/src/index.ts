@@ -9,6 +9,7 @@ import {
   parseJsonBodyWithSizeLimit
 } from "./http";
 import { parseSnapshotPayload } from "./payload";
+import { renderSnapshotHtml } from "./render";
 import { createSnapshot, deleteExpiredSnapshots, getSnapshotByHash } from "./store";
 import type { Env } from "./types";
 
@@ -56,6 +57,42 @@ async function handleGetSnapshot(request: Request, env: Env, snapshotHash: strin
   return jsonResponse(snapshotResult.snapshot.payload, 200, headers);
 }
 
+async function handleRenderSnapshotPage(request: Request, env: Env, snapshotHash: string): Promise<Response> {
+  const snapshotResult = await getSnapshotByHash(env, snapshotHash);
+  if (snapshotResult.isExpired) {
+    return new Response("<h1>410 Snapshot expired</h1>", {
+      status: 410,
+      headers: {
+        "content-type": "text/html; charset=utf-8"
+      }
+    });
+  }
+  if (snapshotResult.snapshot === null) {
+    return new Response("<h1>404 Snapshot not found</h1>", {
+      status: 404,
+      headers: {
+        "content-type": "text/html; charset=utf-8"
+      }
+    });
+  }
+
+  const etag = buildEtag("html", snapshotResult.snapshot.hash);
+  const headers = buildCacheHeaders(snapshotResult.snapshot.expiresAt, etag);
+  headers.set("content-type", "text/html; charset=utf-8");
+
+  if (ifNoneMatchMatches(request.headers.get("if-none-match"), etag)) {
+    return new Response(null, {
+      status: 304,
+      headers
+    });
+  }
+
+  return new Response(renderSnapshotHtml(snapshotResult.snapshot), {
+    status: 200,
+    headers
+  });
+}
+
 async function handleRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
 
@@ -73,6 +110,10 @@ async function handleRequest(request: Request, env: Env): Promise<Response> {
       return jsonError(404, "Snapshot not found.");
     }
     return handleGetSnapshot(request, env, snapshotHash);
+  }
+
+  if (request.method === "GET" && SNAPSHOT_HASH_PATTERN.test(url.pathname.slice(1))) {
+    return handleRenderSnapshotPage(request, env, url.pathname.slice(1));
   }
 
   return jsonError(501, "Worker scaffold is ready. Endpoint implementation is in progress.");
