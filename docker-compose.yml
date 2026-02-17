@@ -29,3 +29,24 @@ services:
       context: ./api
     image: for-us-api:dev
     command: ./scripts/run-typecheck.sh
+
+  worker-test:
+    build:
+      context: .
+      dockerfile: cloudflare/worker/Dockerfile
+    image: for-us-worker:dev
+    command: ./cloudflare/worker/scripts/run-tests.sh
+
+  worker-lint:
+    build:
+      context: .
+      dockerfile: cloudflare/worker/Dockerfile
+    image: for-us-worker:dev
+    command: ./cloudflare/worker/scripts/run-lint.sh
+
+  worker-typecheck:
+    build:
+      context: .
+      dockerfile: cloudflare/worker/Dockerfile
+    image: for-us-worker:dev
+    command: ./cloudflare/worker/scripts/run-typecheck.sh

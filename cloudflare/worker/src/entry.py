@@ -1,3 +1,5 @@
+# pyright: reportMissingModuleSource=false, reportAssignmentType=false
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -6,12 +8,13 @@ from typing import Any
 from for_us_worker.app import handle_fetch, handle_scheduled
 
 try:
-    from workers import Response, WorkerEntrypoint
+    from workers import Response as WorkersResponse
+    from workers import WorkerEntrypoint as WorkersEntrypoint
 except ModuleNotFoundError:  # pragma: no cover - local test fallback
-    class WorkerEntrypoint:  # type: ignore[override]
+    class WorkersEntrypoint:
         env: Any
 
-    class Response:  # type: ignore[override]
+    class WorkersResponse:
         def __init__(
             self,
             body: str,
@@ -24,10 +27,10 @@ except ModuleNotFoundError:  # pragma: no cover - local test fallback
             self.headers = dict(headers or {})
 
 
-class Default(WorkerEntrypoint):
-    async def fetch(self, request: Any) -> Response:
+class Default(WorkersEntrypoint):
+    async def fetch(self, request: Any) -> WorkersResponse:
         response_spec = await handle_fetch(request=request, env=self.env)
-        return Response(response_spec.body, status=response_spec.status, headers=response_spec.headers)
+        return WorkersResponse(response_spec.body, status=response_spec.status, headers=response_spec.headers)
 
     async def scheduled(self, controller: Any, env: Any, ctx: Any) -> None:
         del controller, ctx

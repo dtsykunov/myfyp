@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 import hashlib
+from typing import cast
 
 from for_us_api.abuse import AbuseConfig
 
@@ -139,10 +141,12 @@ def _hash_ip(client_ip: str) -> str:
 
 
 def _extract_changes(result: object) -> int:
-    if isinstance(result, dict):
-        meta = result.get("meta")
-        if isinstance(meta, dict):
-            changes = meta.get("changes")
+    if isinstance(result, Mapping):
+        result_mapping = cast(Mapping[str, object], result)
+        meta = result_mapping.get("meta")
+        if isinstance(meta, Mapping):
+            meta_mapping = cast(Mapping[str, object], meta)
+            changes = meta_mapping.get("changes")
             if isinstance(changes, int):
                 return changes
-    return int(getattr(result, "changes", 0))
+    return 0

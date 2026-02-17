@@ -21,7 +21,9 @@ class D1Database(Protocol):
 
 
 class WorkerEnv(Protocol):
-    DB: D1Database
+    @property
+    def DB(self) -> D1Database:
+        ...
 
 
 class HeadersLike(Protocol):
@@ -30,9 +32,17 @@ class HeadersLike(Protocol):
 
 
 class RequestLike(Protocol):
-    method: str
-    url: str
-    headers: HeadersLike
+    @property
+    def method(self) -> str:
+        ...
+
+    @property
+    def url(self) -> str:
+        ...
+
+    @property
+    def headers(self) -> HeadersLike:
+        ...
 
     async def text(self) -> str:
         ...

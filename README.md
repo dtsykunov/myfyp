@@ -40,6 +40,7 @@ This project lets a user capture their current YouTube home feed and share it wi
 
 - `extension/`: browser-side MVP userscript scaffold.
 - `api/`: Python/FastAPI service scaffold with tests.
+- `cloudflare/worker/`: Cloudflare Python Worker + D1 adapter.
 - `flake.nix`: Nix flake dev shell for local reproducible runs.
 - `.github/workflows/ci.yml`: CI that runs API tests via Docker.
 - `docker-compose.yml`: local container workflow for run/test parity.
@@ -105,6 +106,9 @@ nix develop --command sh -c "cd api && ./scripts/run-tests.sh"
 nix develop --command sh -c "cd api && ./scripts/run-lint.sh"
 nix develop --command sh -c "cd api && ./scripts/run-typecheck.sh"
 nix develop --command sh -c "cd api && ./scripts/run-api.sh"
+nix develop --command sh -c "./cloudflare/worker/scripts/run-lint.sh"
+nix develop --command sh -c "./cloudflare/worker/scripts/run-typecheck.sh"
+nix develop --command sh -c "./cloudflare/worker/scripts/run-tests.sh"
 ```
 
 ### CI Path / Container Path (Docker)
@@ -114,6 +118,9 @@ docker compose run --rm api-lint
 docker compose run --rm api-typecheck
 docker compose run --rm api-test
 docker compose up api
+docker compose run --rm worker-lint
+docker compose run --rm worker-typecheck
+docker compose run --rm worker-test
 ```
 
 ## Notes for Contributors / AI Agents

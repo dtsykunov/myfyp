@@ -1,15 +1,20 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Coroutine
 import json
+from typing import TypeVar, cast
 
 from for_us_worker.app import handle_fetch
 
-from tests.helpers import FakeEnv, FakeRequest
+from .helpers import FakeEnv, FakeRequest
 
 
-def _run(coro: object) -> object:
-    return asyncio.run(coro)  # type: ignore[arg-type]
+T = TypeVar("T")
+
+
+def _run(coro: Awaitable[T]) -> T:
+    return asyncio.run(cast(Coroutine[object, object, T], coro))
 
 
 def test_health_route() -> None:

@@ -16,6 +16,9 @@ jobs:
       - name: Build API image
         run: docker compose build api-test
 
+      - name: Build Worker image
+        run: docker compose build worker-test
+
       - name: Run API lint in container
         run: docker compose run --rm api-lint
 
@@ -24,3 +27,12 @@ jobs:
 
       - name: Run API tests in container
         run: docker compose run --rm api-test
+
+      - name: Run Worker lint in container
+        run: docker compose run --rm worker-lint
+
+      - name: Run Worker type checks in container
+        run: docker compose run --rm worker-typecheck
+
+      - name: Run Worker tests in container
+        run: docker compose run --rm worker-test

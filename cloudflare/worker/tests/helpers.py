@@ -2,7 +2,18 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
+
+
+def _empty_snapshots() -> dict[str, dict[str, str]]:
+    return {}
+
+
+def _empty_abuse_rate_limit() -> dict[tuple[str, str, str], int]:
+    return {}
+
+
+def _empty_abuse_write_daily() -> dict[tuple[str, str], int]:
+    return {}
 
 
 @dataclass
@@ -25,9 +36,9 @@ class FakePreparedStatement:
 
 @dataclass
 class FakeD1Database:
-    snapshots: dict[str, dict[str, str]] = field(default_factory=dict)
-    abuse_rate_limit: dict[tuple[str, str, str], int] = field(default_factory=dict)
-    abuse_write_daily: dict[tuple[str, str], int] = field(default_factory=dict)
+    snapshots: dict[str, dict[str, str]] = field(default_factory=_empty_snapshots)
+    abuse_rate_limit: dict[tuple[str, str, str], int] = field(default_factory=_empty_abuse_rate_limit)
+    abuse_write_daily: dict[tuple[str, str], int] = field(default_factory=_empty_abuse_write_daily)
 
     def prepare(self, query: str) -> FakePreparedStatement:
         return FakePreparedStatement(self, query)

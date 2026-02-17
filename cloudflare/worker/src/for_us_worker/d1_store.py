@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 import json
 import secrets
 import string
+from typing import cast
 
 from for_us_api.models import CreateSnapshotRequest, StoredSnapshot
 
@@ -144,20 +145,22 @@ def _to_mapping(row: object | None) -> Mapping[str, object] | None:
     if callable(to_py):
         converted = to_py()
         if isinstance(converted, Mapping):
-            return converted
+            return cast(Mapping[str, object], converted)
     if isinstance(row, Mapping):
-        return row
+        return cast(Mapping[str, object], row)
     return None
 
 
 def _extract_changes(result: object) -> int:
     if isinstance(result, Mapping):
-        meta = result.get("meta")
+        result_mapping = cast(Mapping[str, object], result)
+        meta = result_mapping.get("meta")
         if isinstance(meta, Mapping):
-            changes = meta.get("changes")
+            meta_mapping = cast(Mapping[str, object], meta)
+            changes = meta_mapping.get("changes")
             if isinstance(changes, int):
                 return changes
-    return int(getattr(result, "changes", 0))
+    return 0
 
 
 def _require_str(mapping: Mapping[str, object], key: str) -> str:

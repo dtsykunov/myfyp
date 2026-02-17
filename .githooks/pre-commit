@@ -6,3 +6,4 @@ cd "$repo_root"
 
 echo "[pre-commit] Running lint, type checks, and tests via Nix dev shell..."
 nix develop --command sh -c "cd api && ./scripts/run-lint.sh && ./scripts/run-typecheck.sh && ./scripts/run-tests.sh"
+nix develop --command sh -c "./cloudflare/worker/scripts/run-lint.sh && ./cloudflare/worker/scripts/run-typecheck.sh && ./cloudflare/worker/scripts/run-tests.sh"
