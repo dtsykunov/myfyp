@@ -52,9 +52,8 @@ def test_stored_snapshot_model() -> None:
         hash="abc12345",
         created_at=datetime(2026, 2, 17, tzinfo=timezone.utc),
         expires_at=datetime(2026, 2, 24, tzinfo=timezone.utc),
-        payload=RecommendationPayload(videos=["lzChIIJMpGk"], shorts=[]),
+        payload=CreateSnapshotRequest(videos=["lzChIIJMpGk"], shorts=[]),
     )
 
     assert snapshot.hash == "abc12345"
     assert snapshot.payload.videos == ["lzChIIJMpGk"]
-

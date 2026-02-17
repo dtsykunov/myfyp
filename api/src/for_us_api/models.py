@@ -49,5 +49,4 @@ class StoredSnapshot(BaseModel):
     hash: SnapshotHash
     created_at: datetime
     expires_at: datetime
-    payload: RecommendationPayload
-
+    payload: CreateSnapshotRequest

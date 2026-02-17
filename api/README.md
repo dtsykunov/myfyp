@@ -2,6 +2,11 @@
 
 This directory contains the initial API scaffold.
 
+## Endpoints
+
+- `GET /health`
+- `POST /api/snapshots`: validates and stores recommendation payload in SQLite, returns `hash` and `expiresAt`.
+
 ## Local (Nix Flake)
 
 ```bash
