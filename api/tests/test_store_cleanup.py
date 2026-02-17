@@ -29,3 +29,21 @@ def test_initialize_deletes_expired_rows(tmp_path: Path) -> None:
     store.initialize()
 
     assert _count_rows(database_path) == 0
+
+
+def test_get_snapshot_deletes_expired_row_on_access(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    store = SnapshotStore(database_path=database_path)
+    store.initialize()
+    expired_snapshot = store.create_snapshot(
+        CreateSnapshotRequest(
+            videos=[RecommendationItem(videoHash="lzChIIJMpGk", title="Sample video")], shorts=[]
+        ),
+        now=datetime.now(timezone.utc) - timedelta(days=8),
+    )
+
+    snapshot, is_expired = store.get_snapshot(expired_snapshot.hash)
+
+    assert snapshot is None
+    assert is_expired is True
+    assert _count_rows(database_path) == 0

@@ -1,7 +1,9 @@
+from collections import OrderedDict
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 import html
+from threading import Lock
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -11,6 +13,47 @@ from for_us_api.abuse import AbuseConfig, InMemoryAbuseGuard
 from for_us_api.models import CreateSnapshotRequest, CreateSnapshotResponse, RecommendationItem, StoredSnapshot
 from for_us_api.store import SnapshotStore
 
+DEFAULT_HTML_CACHE_ENTRIES = 2000
+
+
+class _SnapshotHtmlCache:
+    def __init__(self, max_entries: int = DEFAULT_HTML_CACHE_ENTRIES) -> None:
+        if max_entries <= 0:
+            raise ValueError("max_entries must be positive.")
+        self._max_entries = max_entries
+        self._entries: OrderedDict[str, tuple[str, datetime]] = OrderedDict()
+        self._lock = Lock()
+
+    def get(self, snapshot_hash: str, now: datetime | None = None) -> str | None:
+        effective_now = _to_utc(now or datetime.now(timezone.utc))
+        with self._lock:
+            entry = self._entries.get(snapshot_hash)
+            if entry is None:
+                return None
+            html_document, expires_at = entry
+            if _to_utc(expires_at) <= effective_now:
+                self._entries.pop(snapshot_hash, None)
+                return None
+            self._entries.move_to_end(snapshot_hash)
+            return html_document
+
+    def set(
+        self,
+        snapshot_hash: str,
+        html_document: str,
+        expires_at: datetime,
+        now: datetime | None = None,
+    ) -> None:
+        effective_now = _to_utc(now or datetime.now(timezone.utc))
+        normalized_expires_at = _to_utc(expires_at)
+        if normalized_expires_at <= effective_now:
+            return
+        with self._lock:
+            self._entries[snapshot_hash] = (html_document, normalized_expires_at)
+            self._entries.move_to_end(snapshot_hash)
+            while len(self._entries) > self._max_entries:
+                self._entries.popitem(last=False)
+
 
 def create_app(
     store: SnapshotStore | None = None,
@@ -19,6 +62,7 @@ def create_app(
     """Create and configure the API application."""
     snapshot_store = store or SnapshotStore.from_environment()
     guard = abuse_guard or InMemoryAbuseGuard(AbuseConfig())
+    html_cache = _SnapshotHtmlCache()
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -69,7 +113,7 @@ def create_app(
         response_model=CreateSnapshotRequest,
         response_model_exclude_none=True,
     )
-    def get_snapshot(request: Request, snapshot_hash: str) -> CreateSnapshotRequest:  # pyright: ignore[reportUnusedFunction]
+    def get_snapshot(request: Request, snapshot_hash: str) -> Response | CreateSnapshotRequest:  # pyright: ignore[reportUnusedFunction]
         allowed, reason = guard.allow_snapshot_read(_client_ip(request))
         if not allowed:
             raise HTTPException(status_code=429, detail=reason)
@@ -78,10 +122,17 @@ def create_app(
             raise HTTPException(status_code=410, detail="Snapshot has expired.")
         if snapshot is None:
             raise HTTPException(status_code=404, detail="Snapshot not found.")
-        return snapshot.payload
+        etag = _build_etag("api", snapshot.hash)
+        cache_headers = _build_cache_headers(snapshot.expires_at, etag)
+        if _if_none_match_matches(request.headers.get("if-none-match"), etag):
+            return Response(status_code=304, headers=cache_headers)
+        return JSONResponse(
+            content=snapshot.payload.model_dump(by_alias=True, mode="json", exclude_none=True),
+            headers=cache_headers,
+        )
 
     @app.get("/{snapshot_hash}", response_class=HTMLResponse)
-    def render_snapshot_page(request: Request, snapshot_hash: str) -> HTMLResponse:  # pyright: ignore[reportUnusedFunction]
+    def render_snapshot_page(request: Request, snapshot_hash: str) -> Response:  # pyright: ignore[reportUnusedFunction]
         allowed, _reason = guard.allow_snapshot_read(_client_ip(request))
         if not allowed:
             return HTMLResponse("<h1>429 Too Many Requests</h1>", status_code=429)
@@ -90,7 +141,16 @@ def create_app(
             return HTMLResponse("<h1>410 Snapshot expired</h1>", status_code=410)
         if snapshot is None:
             return HTMLResponse("<h1>404 Snapshot not found</h1>", status_code=404)
-        return HTMLResponse(_render_snapshot_html(snapshot), status_code=200)
+        etag = _build_etag("html", snapshot.hash)
+        cache_headers = _build_cache_headers(snapshot.expires_at, etag)
+        if _if_none_match_matches(request.headers.get("if-none-match"), etag):
+            return Response(status_code=304, headers=cache_headers)
+
+        cached_html = html_cache.get(snapshot.hash)
+        if cached_html is None:
+            cached_html = _render_snapshot_html(snapshot)
+            html_cache.set(snapshot.hash, cached_html, snapshot.expires_at)
+        return HTMLResponse(cached_html, status_code=200, headers=cache_headers)
 
     return app
 
@@ -765,6 +825,28 @@ def _to_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(tzinfo=timezone.utc)
     return value.astimezone(timezone.utc)
+
+
+def _build_etag(prefix: str, snapshot_hash: str) -> str:
+    return f"\"{prefix}-{snapshot_hash}\""
+
+
+def _build_cache_headers(expires_at: datetime, etag: str) -> dict[str, str]:
+    now = datetime.now(timezone.utc)
+    max_age = max(0, int((_to_utc(expires_at) - now).total_seconds()))
+    return {
+        "Cache-Control": f"public, max-age={max_age}, immutable",
+        "ETag": etag,
+    }
+
+
+def _if_none_match_matches(header_value: str | None, expected_etag: str) -> bool:
+    if header_value is None:
+        return False
+    if header_value.strip() == "*":
+        return True
+    candidates = [token.strip() for token in header_value.split(",")]
+    return expected_etag in candidates
 
 
 def _format_relative_time(published_at: datetime, reference_time: datetime) -> str:

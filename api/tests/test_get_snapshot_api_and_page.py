@@ -41,6 +41,32 @@ def test_get_snapshot_api_returns_stored_payload(tmp_path: Path) -> None:
 
     assert get_response.status_code == 200
     assert get_response.json() == payload
+    assert get_response.headers["etag"].startswith('"api-')
+    assert "public, max-age=" in get_response.headers["cache-control"]
+    assert "immutable" in get_response.headers["cache-control"]
+
+
+def test_get_snapshot_api_returns_304_when_etag_matches(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    payload = {
+        "videos": [{"videoHash": "lzChIIJMpGk", "title": "example"}],
+        "shorts": [],
+    }
+
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        create_response = client.post("/api/snapshots", json=payload)
+        snapshot_hash = create_response.json()["hash"]
+
+        initial_get = client.get(f"/api/snapshots/{snapshot_hash}")
+        etag = initial_get.headers["etag"]
+        cached_get = client.get(
+            f"/api/snapshots/{snapshot_hash}",
+            headers={"If-None-Match": etag},
+        )
+
+    assert initial_get.status_code == 200
+    assert cached_get.status_code == 304
+    assert cached_get.headers["etag"] == etag
 
 
 def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> None:
@@ -79,6 +105,31 @@ def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> 
     assert "https://yt3.ggpht.com/avatar" in page_response.text
     assert "81K views" in page_response.text
     assert "3 days ago" in page_response.text
+    assert page_response.headers["etag"].startswith('"html-')
+    assert "public, max-age=" in page_response.headers["cache-control"]
+    assert "immutable" in page_response.headers["cache-control"]
+
+
+def test_render_snapshot_page_returns_304_when_etag_matches(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    payload = {
+        "videos": [{"videoHash": "lzChIIJMpGk", "title": "page cache"}],
+        "shorts": [],
+    }
+
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        create_response = client.post("/api/snapshots", json=payload)
+        snapshot_hash = create_response.json()["hash"]
+        initial_page = client.get(f"/{snapshot_hash}")
+        etag = initial_page.headers["etag"]
+        cached_page = client.get(
+            f"/{snapshot_hash}",
+            headers={"If-None-Match": etag},
+        )
+
+    assert initial_page.status_code == 200
+    assert cached_page.status_code == 304
+    assert cached_page.headers["etag"] == etag
 
 
 def test_render_snapshot_page_with_missing_optional_metadata(tmp_path: Path) -> None:
