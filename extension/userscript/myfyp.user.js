@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://myfyp.link
-// @version      0.1.13
+// @version      0.1.14
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
@@ -607,17 +607,35 @@
       toast.appendChild(message);
     }
 
-    if (options.linkUrl) {
-      const link = document.createElement("a");
-      link.href = options.linkUrl;
-      link.textContent = options.linkUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.style.display = "block";
-      link.style.marginTop = "8px";
-      link.style.color = "#8ab4ff";
-      link.style.wordBreak = "break-all";
-      toast.appendChild(link);
+    const linkEntries = Array.isArray(options.links) ? options.links : [];
+    if (linkEntries.length > 0) {
+      for (const entry of linkEntries) {
+        if (!entry || typeof entry.url !== "string" || !entry.url.trim()) {
+          continue;
+        }
+        const row = document.createElement("div");
+        row.style.marginTop = "8px";
+
+        if (entry.label) {
+          const label = document.createElement("div");
+          label.textContent = `${entry.label}:`;
+          label.style.fontSize = "12px";
+          label.style.color = "rgba(255,255,255,0.8)";
+          row.appendChild(label);
+        }
+
+        const link = document.createElement("a");
+        link.href = entry.url;
+        link.textContent = entry.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.style.display = "block";
+        link.style.marginTop = "2px";
+        link.style.color = "#8ab4ff";
+        link.style.wordBreak = "break-all";
+        row.appendChild(link);
+        toast.appendChild(row);
+      }
     }
 
     const closeButton = document.createElement("button");
@@ -647,6 +665,25 @@
     }
     try {
       return new URL(`/${snapshotHash}`, `${apiBaseUrl}/`).toString();
+    } catch {
+      return null;
+    }
+  }
+
+  function buildRemoveUrl(apiBaseUrl, response) {
+    if (response && typeof response.removeUrl === "string" && response.removeUrl.trim()) {
+      return response.removeUrl.trim();
+    }
+    const snapshotHash = response && typeof response.hash === "string" ? response.hash : "";
+    const removeToken = response && typeof response.removeToken === "string" ? response.removeToken : "";
+    if (!snapshotHash || !removeToken) {
+      return null;
+    }
+    try {
+      return new URL(
+        `/api/snapshots/${encodeURIComponent(snapshotHash)}/remove/${encodeURIComponent(removeToken)}`,
+        `${apiBaseUrl}/`
+      ).toString();
     } catch {
       return null;
     }
@@ -774,11 +811,17 @@
     try {
       const response = await uploadSnapshot(snapshot, apiBaseUrl);
       const snapshotUrl = buildSnapshotUrl(apiBaseUrl, response);
+      const removeUrl = buildRemoveUrl(apiBaseUrl, response);
       console.info(`[${APP_NAME}] Upload response:`, response);
       showToast({
         title: `${APP_NAME} upload complete`,
-        message: snapshotUrl ? "Snapshot link:" : "Upload succeeded, but no link was returned.",
-        linkUrl: snapshotUrl,
+        message: snapshotUrl
+          ? "Snapshot and remove links:"
+          : "Upload succeeded, but no snapshot link was returned.",
+        links: [
+          snapshotUrl ? { label: "Share link", url: snapshotUrl } : null,
+          removeUrl ? { label: "Remove link", url: removeUrl } : null,
+        ].filter(Boolean),
       });
       return response;
     } catch (error) {
