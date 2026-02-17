@@ -342,3 +342,48 @@ def test_client_ip_resolution() -> None:
 
     unknown = FakeRequest(method="GET", url="https://example.com/health")
     assert app._client_ip(unknown) == "unknown"
+
+
+def test_abuse_limiting_flag_parsing() -> None:
+    env = FakeEnv()
+
+    assert app._is_abuse_limiting_enabled(env) is True
+
+    env.ABUSE_LIMITING_ENABLED = "0"
+    assert app._is_abuse_limiting_enabled(env) is False
+
+    env.ABUSE_LIMITING_ENABLED = "false"
+    assert app._is_abuse_limiting_enabled(env) is False
+
+    env.ABUSE_LIMITING_ENABLED = "off"
+    assert app._is_abuse_limiting_enabled(env) is False
+
+    env.ABUSE_LIMITING_ENABLED = "1"
+    assert app._is_abuse_limiting_enabled(env) is True
+
+
+def test_create_snapshot_bypasses_abuse_limiter_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    env = FakeEnv()
+    env.ABUSE_LIMITING_ENABLED = "0"
+
+    async def _deny_create(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        return type("Decision", (), {"allowed": False, "reason": "denied"})()
+
+    monkeypatch.setattr(app, "allow_snapshot_create", _deny_create)
+
+    response = _run(
+        handle_fetch(
+            FakeRequest(
+                method="POST",
+                url="https://example.com/api/snapshots",
+                headers={
+                    "content-type": "application/json",
+                    "cf-connecting-ip": "198.51.100.22",
+                },
+                body=_valid_payload(),
+            ),
+            env,
+        )
+    )
+    assert response.status == 201

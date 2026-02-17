@@ -13,6 +13,7 @@ if [ -n "${CF_ROUTE_PATTERN:-}" ] || [ -n "${CF_ZONE_ID:-}" ]; then
   : "${CF_ZONE_ID:?CF_ZONE_ID must be set when CF_ROUTE_PATTERN is set}"
   workers_dev="false"
 fi
+abuse_limiting_enabled="${CF_ABUSE_LIMITING_ENABLED:-0}"
 
 {
   cat <<EOT
@@ -41,6 +42,9 @@ database_id = "${CF_D1_DATABASE_ID}"
 
 [triggers]
 crons = ["0 * * * *"]
+
+[vars]
+ABUSE_LIMITING_ENABLED = "${abuse_limiting_enabled}"
 
 [observability.logs]
 enabled = true

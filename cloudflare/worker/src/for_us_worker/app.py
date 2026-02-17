@@ -114,13 +114,14 @@ async def handle_scheduled(env: WorkerEnv) -> None:
 
 
 async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
-    create_decision = await allow_snapshot_create(
-        env=env,
-        client_ip=_client_ip(request),
-        config=_ABUSE_CONFIG,
-    )
-    if not create_decision.allowed:
-        return json_response({"detail": create_decision.reason}, status=429)
+    if _is_abuse_limiting_enabled(env):
+        create_decision = await allow_snapshot_create(
+            env=env,
+            client_ip=_client_ip(request),
+            config=_ABUSE_CONFIG,
+        )
+        if not create_decision.allowed:
+            return json_response({"detail": create_decision.reason}, status=429)
 
     body_text = await _read_body_with_limit(request, _MAX_BODY_BYTES)
     payload = parse_create_snapshot_request_json(body_text)
@@ -137,13 +138,14 @@ async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> Respo
 
 
 async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_hash: str) -> ResponseSpec:
-    read_decision = await allow_snapshot_read(
-        env=env,
-        client_ip=_client_ip(request),
-        config=_ABUSE_CONFIG,
-    )
-    if not read_decision.allowed:
-        return json_response({"detail": read_decision.reason}, status=429)
+    if _is_abuse_limiting_enabled(env):
+        read_decision = await allow_snapshot_read(
+            env=env,
+            client_ip=_client_ip(request),
+            config=_ABUSE_CONFIG,
+        )
+        if not read_decision.allowed:
+            return json_response({"detail": read_decision.reason}, status=429)
 
     lookup = await get_snapshot_by_hash(env, snapshot_hash)
     if lookup.is_expired:
@@ -163,13 +165,14 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
 
 
 async def _handle_render_snapshot(snapshot_hash: str, request: RequestLike, env: WorkerEnv) -> ResponseSpec:
-    read_decision = await allow_snapshot_read(
-        env=env,
-        client_ip=_client_ip(request),
-        config=_ABUSE_CONFIG,
-    )
-    if not read_decision.allowed:
-        return html_response("<h1>429 Too Many Requests</h1>", status=429)
+    if _is_abuse_limiting_enabled(env):
+        read_decision = await allow_snapshot_read(
+            env=env,
+            client_ip=_client_ip(request),
+            config=_ABUSE_CONFIG,
+        )
+        if not read_decision.allowed:
+            return html_response("<h1>429 Too Many Requests</h1>", status=429)
 
     lookup = await get_snapshot_by_hash(env, snapshot_hash)
     if lookup.is_expired:
@@ -220,3 +223,9 @@ def _extract_validation_errors(exc: Exception) -> list[object]:
         if isinstance(errors, list):
             return cast(list[object], errors)
     return [str(exc)]
+
+
+def _is_abuse_limiting_enabled(env: WorkerEnv) -> bool:
+    raw_value = getattr(env, "ABUSE_LIMITING_ENABLED", "1")
+    normalized = str(raw_value).strip().lower()
+    return normalized not in {"0", "false", "no", "off"}

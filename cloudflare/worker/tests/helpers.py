@@ -116,6 +116,7 @@ class FakeD1Database:
 @dataclass
 class FakeEnv:
     DB: FakeD1Database = field(default_factory=FakeD1Database)
+    ABUSE_LIMITING_ENABLED: str = "1"
 
 
 class FakeHeaders:
