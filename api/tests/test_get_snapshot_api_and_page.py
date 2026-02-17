@@ -54,7 +54,7 @@ def test_get_snapshot_api_returns_404_for_unknown_hash(tmp_path: Path) -> None:
     assert response.status_code == 404
 
 
-def test_expired_snapshot_returns_410_for_api_and_page(tmp_path: Path) -> None:
+def test_expired_snapshot_is_cleaned_up_and_returns_404(tmp_path: Path) -> None:
     database_path = tmp_path / "snapshots.db"
     store = SnapshotStore(database_path=database_path)
     store.initialize()
@@ -67,6 +67,5 @@ def test_expired_snapshot_returns_410_for_api_and_page(tmp_path: Path) -> None:
         api_response = client.get(f"/api/snapshots/{expired_snapshot.hash}")
         page_response = client.get(f"/{expired_snapshot.hash}")
 
-    assert api_response.status_code == 410
-    assert page_response.status_code == 410
-
+    assert api_response.status_code == 404
+    assert page_response.status_code == 404

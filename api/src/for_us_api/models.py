@@ -12,8 +12,8 @@ class RecommendationPayload(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    videos: list[VideoHash] = Field(default_factory=list)
-    shorts: list[VideoHash] = Field(default_factory=list)
+    videos: list[VideoHash] = Field(default_factory=list, max_length=200)
+    shorts: list[VideoHash] = Field(default_factory=list, max_length=200)
 
     @field_validator("videos", "shorts")
     @classmethod

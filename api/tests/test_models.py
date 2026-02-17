@@ -36,6 +36,12 @@ def test_recommendation_payload_rejects_duplicates() -> None:
         RecommendationPayload(videos=["lzChIIJMpGk", "lzChIIJMpGk"], shorts=[])
 
 
+def test_recommendation_payload_rejects_too_many_items() -> None:
+    too_many_videos = [f"vid{index:08d}" for index in range(201)]
+    with pytest.raises(ValidationError):
+        RecommendationPayload(videos=too_many_videos, shorts=[])
+
+
 def test_create_snapshot_response_aliases() -> None:
     response = CreateSnapshotResponse(
         hash="abc12345",

@@ -55,6 +55,7 @@ This project lets a user capture their current YouTube home feed and share it wi
   - `POST /api/snapshots` stores payload in SQLite and returns share hash + expiry.
   - `GET /api/snapshots/{hash}` retrieves stored payload.
   - `GET /{hash}` renders a basic server-side HTML page for sharing.
+  - Abuse controls are enabled (payload size/list limits, rate limits, write quota, expired cleanup).
   - Pyproject-based packaging, lint, strict type-checking, and pytest setup are configured.
   - Baseline tests validate API boot and model validation rules.
 
@@ -85,6 +86,15 @@ Example response:
 `GET /api/snapshots/{hash}` returns the stored payload JSON.
 
 `GET /{hash}` returns a minimal rendered HTML page listing videos and shorts.
+
+Default abuse-control limits:
+
+- Max `videos`: 200
+- Max `shorts`: 200
+- Max request body for `POST /api/snapshots`: 64 KB
+- Create rate limit: 10/min per IP
+- Read rate limit: 120/min per IP
+- Create daily quota: 200/day per IP
 
 ## Run and Test
 
