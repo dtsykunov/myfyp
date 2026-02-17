@@ -1,8 +1,10 @@
+import { allowSnapshotCreate, allowSnapshotRead, cleanupAbuseState } from "./abuse";
 import { MAX_SNAPSHOT_BODY_BYTES, SNAPSHOT_HASH_PATTERN } from "./constants";
 import { HttpError } from "./errors";
 import {
   buildCacheHeaders,
   buildEtag,
+  getClientIp,
   ifNoneMatchMatches,
   jsonError,
   jsonResponse,
@@ -23,6 +25,11 @@ function parseSnapshotHashFromPath(pathname: string): string {
 }
 
 async function handleCreateSnapshot(request: Request, env: Env): Promise<Response> {
+  const createDecision = await allowSnapshotCreate(env, getClientIp(request));
+  if (!createDecision.allowed) {
+    return jsonError(429, createDecision.reason);
+  }
+
   const body = await parseJsonBodyWithSizeLimit(request, MAX_SNAPSHOT_BODY_BYTES);
   const payload = parseSnapshotPayload(body);
   const snapshot = await createSnapshot(env, payload);
@@ -37,6 +44,11 @@ async function handleCreateSnapshot(request: Request, env: Env): Promise<Respons
 }
 
 async function handleGetSnapshot(request: Request, env: Env, snapshotHash: string): Promise<Response> {
+  const readDecision = await allowSnapshotRead(env, getClientIp(request));
+  if (!readDecision.allowed) {
+    return jsonError(429, readDecision.reason);
+  }
+
   const snapshotResult = await getSnapshotByHash(env, snapshotHash);
   if (snapshotResult.isExpired) {
     return jsonError(410, "Snapshot has expired.");
@@ -58,6 +70,16 @@ async function handleGetSnapshot(request: Request, env: Env, snapshotHash: strin
 }
 
 async function handleRenderSnapshotPage(request: Request, env: Env, snapshotHash: string): Promise<Response> {
+  const readDecision = await allowSnapshotRead(env, getClientIp(request));
+  if (!readDecision.allowed) {
+    return new Response("<h1>429 Too Many Requests</h1>", {
+      status: 429,
+      headers: {
+        "content-type": "text/html; charset=utf-8"
+      }
+    });
+  }
+
   const snapshotResult = await getSnapshotByHash(env, snapshotHash);
   if (snapshotResult.isExpired) {
     return new Response("<h1>410 Snapshot expired</h1>", {
@@ -134,5 +156,6 @@ export default {
 
   async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext): Promise<void> {
     await deleteExpiredSnapshots(env);
+    await cleanupAbuseState(env);
   }
 };

@@ -20,6 +20,14 @@ CREATE TABLE IF NOT EXISTS abuse_ip_write_daily (
   write_count INTEGER NOT NULL,
   PRIMARY KEY (ip_hash, quota_date)
 );
+
+CREATE TABLE IF NOT EXISTS abuse_ip_rate_limit (
+  ip_hash TEXT NOT NULL,
+  action TEXT NOT NULL,
+  window_start TEXT NOT NULL,
+  request_count INTEGER NOT NULL,
+  PRIMARY KEY (ip_hash, action, window_start)
+);
 `;
 
 beforeAll(async () => {
@@ -29,6 +37,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await env.DB.exec("DELETE FROM snapshots;");
   await env.DB.exec("DELETE FROM abuse_ip_write_daily;");
+  await env.DB.exec("DELETE FROM abuse_ip_rate_limit;");
 });
 
 describe("snapshot API", () => {
