@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://for-us-page.local
-// @version      0.1.5
+// @version      0.1.10
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
+// @grant        GM_registerMenuCommand
 // @connect      *
 // ==/UserScript==
 
@@ -14,6 +15,13 @@
 
   const APP_NAME = "For Us Page";
   const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+  const AD_HOST_PATTERNS = [
+    "googleadservices.com",
+    "doubleclick.net",
+    "googlesyndication.com",
+    "adservice.google.com",
+  ];
+  const AVATAR_HOST_PATTERNS = ["yt3.ggpht.com", "yt3.googleusercontent.com"];
   const RELATIVE_ENGLISH_TIME_PATTERN =
     /^(\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago$/i;
   const RELATIVE_SECONDS_BY_UNIT = {
@@ -26,8 +34,13 @@
     year: 31536000,
   };
   const API_BASE_URL_STORAGE_KEY = "forUsPage.apiBaseUrl";
+  const DEBUG_STORAGE_KEY = "forUsPage.debug";
   const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+  const TOAST_ID = "for-us-page-toast";
+  const CHANNEL_PARSE_WARNING_LIMIT = 5;
   const pageWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
+  let channelParseWarnings = 0;
+  let avatarParseWarnings = 0;
 
   function normalizeText(value) {
     return String(value || "").replace(/\s+/g, " ").trim();
@@ -42,6 +55,10 @@
     } catch {
       return null;
     }
+  }
+
+  function isDebugEnabled() {
+    return pageWindow.localStorage.getItem(DEBUG_STORAGE_KEY) === "1";
   }
 
   function extractVideoHashFromHref(href, baseUrl) {
@@ -130,6 +147,164 @@
     return new Date(nowMs - amount * unitSeconds * 1000).toISOString();
   }
 
+  function isChannelHref(href, baseUrl) {
+    if (!href) {
+      return false;
+    }
+    let url;
+    try {
+      url = new URL(href, baseUrl);
+    } catch {
+      return false;
+    }
+    if (!/youtube\.com$/i.test(url.hostname)) {
+      return false;
+    }
+    const pathname = url.pathname;
+    return (
+      pathname.startsWith("/@")
+      || pathname.startsWith("/channel/")
+      || pathname.startsWith("/c/")
+      || pathname.startsWith("/user/")
+    );
+  }
+
+  function extractChannelNameFromAvatarAria(item) {
+    const avatarButton = item.querySelector(
+      ".yt-lockup-metadata-view-model__avatar [aria-label]"
+    );
+    const ariaLabel = normalizeText(
+      avatarButton ? avatarButton.getAttribute("aria-label") : ""
+    );
+    const prefix = "go to channel ";
+    const lower = ariaLabel.toLowerCase();
+    if (!lower.startsWith(prefix)) {
+      return null;
+    }
+    const extracted = ariaLabel.slice(prefix.length).trim();
+    return extracted || null;
+  }
+
+  function extractChannelData(item, baseUrl) {
+    const linkFromMetadata = item.querySelector(
+      ".yt-lockup-metadata-view-model__metadata-row a[href]"
+    );
+    const linkFromLegacy = item.querySelector("ytd-channel-name a[href], #channel-name a[href]");
+    const allAnchors = Array.from(item.querySelectorAll("a[href]"));
+    const linkFromPattern = allAnchors.find((anchor) =>
+      isChannelHref(anchor.getAttribute("href"), baseUrl)
+    );
+    const channelAnchor = linkFromMetadata || linkFromLegacy || linkFromPattern || null;
+
+    let channelName = normalizeText(channelAnchor ? channelAnchor.textContent : "");
+    if (!channelName) {
+      channelName = extractChannelNameFromAvatarAria(item) || "";
+    }
+    const channelLink = toAbsoluteUrl(
+      channelAnchor ? channelAnchor.getAttribute("href") : null,
+      baseUrl
+    );
+
+    const channelAvatar = extractChannelAvatar(item, baseUrl);
+
+    return {
+      channelName: channelName || null,
+      channelLink,
+      channelAvatar,
+    };
+  }
+
+  function isAvatarHost(hostname) {
+    const normalized = hostname.toLowerCase();
+    return AVATAR_HOST_PATTERNS.some(
+      (avatarHostPattern) => normalized === avatarHostPattern || normalized.endsWith(`.${avatarHostPattern}`)
+    );
+  }
+
+  function isLikelyAvatarSrc(src, baseUrl) {
+    if (!src) {
+      return false;
+    }
+    let url;
+    try {
+      url = new URL(src, baseUrl);
+    } catch {
+      return false;
+    }
+    if (isAvatarHost(url.hostname)) {
+      return true;
+    }
+    return /\/ytc\//i.test(url.pathname);
+  }
+
+  function extractChannelAvatar(item, baseUrl) {
+    const selectorCandidates = [
+      ".yt-lockup-metadata-view-model__avatar img[src]",
+      "yt-decorated-avatar-view-model img[src]",
+      "yt-avatar-shape img[src]",
+      "img.yt-spec-avatar-shape__image[src]",
+      "ytd-channel-name ~ * img[src]",
+      "#channel-name ~ * img[src]",
+    ];
+    for (const selector of selectorCandidates) {
+      const element = item.querySelector(selector);
+      if (!element) {
+        continue;
+      }
+      const src = element.getAttribute("src");
+      if (!isLikelyAvatarSrc(src, baseUrl)) {
+        continue;
+      }
+      const absolute = toAbsoluteUrl(src, baseUrl);
+      if (absolute) {
+        return absolute;
+      }
+    }
+
+    const hostFilteredImage = Array.from(item.querySelectorAll("img[src]")).find((image) =>
+      isLikelyAvatarSrc(image.getAttribute("src"), baseUrl)
+    );
+    if (!hostFilteredImage) {
+      return null;
+    }
+    return toAbsoluteUrl(hostFilteredImage.getAttribute("src"), baseUrl);
+  }
+
+  function maybeLogMissingChannelMetadata(videoHash, item) {
+    if (!isDebugEnabled()) {
+      return;
+    }
+    if (channelParseWarnings >= CHANNEL_PARSE_WARNING_LIMIT) {
+      return;
+    }
+    channelParseWarnings += 1;
+    console.debug(
+      `[${APP_NAME}] Missing channel metadata for video ${videoHash}.`,
+      {
+        hint: "Set localStorage.forUsPage.debug='1' to keep debug logs enabled.",
+        snippet: item.outerHTML.slice(0, 1200),
+      }
+    );
+  }
+
+  function maybeLogMissingAvatar(videoHash, item, channelName, channelLink) {
+    if (!isDebugEnabled()) {
+      return;
+    }
+    if (avatarParseWarnings >= CHANNEL_PARSE_WARNING_LIMIT) {
+      return;
+    }
+    avatarParseWarnings += 1;
+    console.debug(
+      `[${APP_NAME}] Missing avatar for video ${videoHash}.`,
+      {
+        channelName,
+        channelLink,
+        snippet: item.outerHTML.slice(0, 1200),
+      }
+    );
+  }
+
   function buildRecommendationItem(fields) {
     const item = {
       videoHash: fields.videoHash,
@@ -168,22 +343,7 @@
     const titleAttr = normalizeText(titleLink ? titleLink.getAttribute("title") : "");
     const title = titleText || titleAttr || videoHash;
 
-    const channelLinkElement = item.querySelector(
-      ".yt-lockup-metadata-view-model__metadata-row a[href]"
-    );
-    const channelName = normalizeText(
-      channelLinkElement ? channelLinkElement.textContent : ""
-    );
-    const channelLink = toAbsoluteUrl(
-      channelLinkElement ? channelLinkElement.getAttribute("href") : null,
-      baseUrl
-    );
-    const channelAvatar = toAbsoluteUrl(
-      item
-        .querySelector(".yt-lockup-metadata-view-model__avatar img[src]")
-        ?.getAttribute("src"),
-      baseUrl
-    );
+    const channelData = extractChannelData(item, baseUrl);
 
     const metadataTexts = Array.from(
       item.querySelectorAll(
@@ -213,12 +373,24 @@
       }
     }
 
+    if (!channelData.channelName && !channelData.channelLink && !channelData.channelAvatar) {
+      maybeLogMissingChannelMetadata(videoHash, item);
+    }
+    if ((channelData.channelName || channelData.channelLink) && !channelData.channelAvatar) {
+      maybeLogMissingAvatar(
+        videoHash,
+        item,
+        channelData.channelName,
+        channelData.channelLink
+      );
+    }
+
     return buildRecommendationItem({
       videoHash,
       title,
-      channelName: channelName || null,
-      channelLink,
-      channelAvatar,
+      channelName: channelData.channelName,
+      channelLink: channelData.channelLink,
+      channelAvatar: channelData.channelAvatar,
       viewCount,
       publishedAt,
     });
@@ -257,6 +429,44 @@
     });
   }
 
+  function isAdLinkHref(href, baseUrl) {
+    if (!href) {
+      return false;
+    }
+    let url;
+    try {
+      url = new URL(href, baseUrl);
+    } catch {
+      return false;
+    }
+    const hostname = url.hostname.toLowerCase();
+    return AD_HOST_PATTERNS.some(
+      (adHostPattern) => hostname === adHostPattern || hostname.endsWith(`.${adHostPattern}`)
+    );
+  }
+
+  function isAdRichItem(item, baseUrl) {
+    if (
+      item.querySelector(
+        "ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, feed-ad-metadata-view-model, ad-badge-view-model"
+      )
+    ) {
+      return true;
+    }
+
+    const sponsoredBadge = item.querySelector(
+      ".yt-badge-shape--ad, .ytwAdBadgeViewModelHostIsClickableAdComponent"
+    );
+    if (sponsoredBadge) {
+      return true;
+    }
+
+    const adLink = Array.from(item.querySelectorAll("a[href]")).some((link) =>
+      isAdLinkHref(link.getAttribute("href"), baseUrl)
+    );
+    return adLink;
+  }
+
   function collectRecommendationsFromDocument(doc) {
     const items = doc.querySelectorAll("ytd-rich-item-renderer");
     const videos = [];
@@ -267,6 +477,9 @@
     const nowMs = Date.now();
 
     for (const item of items) {
+      if (isAdRichItem(item, baseUrl)) {
+        continue;
+      }
       const isShortsItem = Boolean(item.closest("ytd-rich-section-renderer"));
       const parsedItem = isShortsItem
         ? parseShortItem(item, baseUrl, nowMs)
@@ -320,6 +533,89 @@
   function getApiBaseUrl() {
     const fromStorage = pageWindow.localStorage.getItem(API_BASE_URL_STORAGE_KEY);
     return normalizeApiBaseUrl(fromStorage || DEFAULT_API_BASE_URL);
+  }
+
+  function removeToast() {
+    const existing = document.getElementById(TOAST_ID);
+    if (existing) {
+      existing.remove();
+    }
+  }
+
+  function showToast(options) {
+    removeToast();
+
+    const toast = document.createElement("div");
+    toast.id = TOAST_ID;
+    toast.style.position = "fixed";
+    toast.style.top = "16px";
+    toast.style.right = "16px";
+    toast.style.maxWidth = "420px";
+    toast.style.padding = "12px 14px";
+    toast.style.borderRadius = "10px";
+    toast.style.background = options.variant === "error" ? "rgba(168, 51, 51, 0.95)" : "rgba(26, 26, 26, 0.95)";
+    toast.style.color = "#fff";
+    toast.style.fontSize = "13px";
+    toast.style.lineHeight = "1.35";
+    toast.style.zIndex = "2147483647";
+    toast.style.boxShadow = "0 8px 24px rgba(0,0,0,0.35)";
+    toast.style.border = "1px solid rgba(255,255,255,0.12)";
+
+    const title = document.createElement("div");
+    title.textContent = options.title;
+    title.style.fontWeight = "700";
+    title.style.marginBottom = "6px";
+    toast.appendChild(title);
+
+    if (options.message) {
+      const message = document.createElement("div");
+      message.textContent = options.message;
+      toast.appendChild(message);
+    }
+
+    if (options.linkUrl) {
+      const link = document.createElement("a");
+      link.href = options.linkUrl;
+      link.textContent = options.linkUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.style.display = "block";
+      link.style.marginTop = "8px";
+      link.style.color = "#8ab4ff";
+      link.style.wordBreak = "break-all";
+      toast.appendChild(link);
+    }
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.textContent = "Close";
+    closeButton.style.marginTop = "10px";
+    closeButton.style.padding = "4px 8px";
+    closeButton.style.border = "1px solid rgba(255,255,255,0.2)";
+    closeButton.style.borderRadius = "6px";
+    closeButton.style.background = "transparent";
+    closeButton.style.color = "#fff";
+    closeButton.style.cursor = "pointer";
+    closeButton.addEventListener("click", removeToast);
+    toast.appendChild(closeButton);
+
+    document.body.appendChild(toast);
+    pageWindow.setTimeout(removeToast, options.durationMs || 12000);
+  }
+
+  function buildSnapshotUrl(apiBaseUrl, response) {
+    if (response && typeof response.url === "string" && response.url.trim()) {
+      return response.url.trim();
+    }
+    const snapshotHash = response && typeof response.hash === "string" ? response.hash : "";
+    if (!snapshotHash) {
+      return null;
+    }
+    try {
+      return new URL(`/${snapshotHash}`, `${apiBaseUrl}/`).toString();
+    } catch {
+      return null;
+    }
   }
 
   function setApiBaseUrl(url) {
@@ -391,18 +687,34 @@
     const snapshot = logSnapshot();
     if (snapshot.videos.length === 0 && snapshot.shorts.length === 0) {
       console.warn(`[${APP_NAME}] No recommendations found, skipping upload.`);
+      showToast({
+        title: `${APP_NAME}`,
+        message: "No recommendations were found, upload skipped.",
+        variant: "error",
+      });
       return null;
     }
     const apiBaseUrl = getApiBaseUrl();
     try {
       const response = await uploadSnapshot(snapshot, apiBaseUrl);
+      const snapshotUrl = buildSnapshotUrl(apiBaseUrl, response);
       console.info(`[${APP_NAME}] Upload response:`, response);
+      showToast({
+        title: `${APP_NAME} upload complete`,
+        message: snapshotUrl ? "Snapshot link:" : "Upload succeeded, but no link was returned.",
+        linkUrl: snapshotUrl,
+      });
       return response;
     } catch (error) {
       console.error(
         `[${APP_NAME}] Failed to upload snapshot to ${apiBaseUrl}:`,
         error
       );
+      showToast({
+        title: `${APP_NAME} upload failed`,
+        message: error instanceof Error ? error.message : "Unknown upload error.",
+        variant: "error",
+      });
       return null;
     }
   }
@@ -421,8 +733,18 @@
     });
   }
 
+  function registerMenuCommands() {
+    if (typeof GM_registerMenuCommand !== "function") {
+      return;
+    }
+    GM_registerMenuCommand("For Us Page: Upload Snapshot", () => {
+      void uploadLatestSnapshot();
+    });
+  }
+
   function bootstrap() {
     registerPublicApi();
+    registerMenuCommands();
     console.info(
       `[${APP_NAME}] Userscript loaded. Run window.forUsPage.uploadLatestSnapshot() to upload and print API response.`
     );

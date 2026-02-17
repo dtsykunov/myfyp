@@ -46,6 +46,7 @@ def test_get_snapshot_api_returns_stored_payload(tmp_path: Path) -> None:
 def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> None:
     database_path = tmp_path / "snapshots.db"
     payload = {
+        "capturedAt": "2026-02-17T11:00:00Z",
         "videos": [
             {
                 "videoHash": "lzChIIJMpGk",
@@ -72,7 +73,10 @@ def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> 
     assert "https://www.youtube.com/shorts/dQw4w9WgXcQ" in page_response.text
     assert "deadlock: items for idiot" in page_response.text
     assert "chalant" in page_response.text
-    assert "81,000 views" in page_response.text
+    assert "https://www.youtube.com/@itschalant" in page_response.text
+    assert "https://yt3.ggpht.com/avatar" in page_response.text
+    assert "81K views" in page_response.text
+    assert "3 days ago" in page_response.text
 
 
 def test_render_snapshot_page_with_missing_optional_metadata(tmp_path: Path) -> None:
@@ -96,6 +100,31 @@ def test_render_snapshot_page_with_missing_optional_metadata(tmp_path: Path) -> 
     assert page_response.status_code == 200
     assert "title without parsed date and views" in page_response.text
     assert "fallback channel" in page_response.text
+
+
+def test_render_snapshot_page_formats_large_views_and_relative_hours(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    payload = {
+        "capturedAt": "2026-02-17T11:00:00Z",
+        "videos": [
+            {
+                "videoHash": "lzChIIJMpGk",
+                "title": "formatting sample",
+                "publishedAt": "2026-02-17T10:00:00Z",
+                "viewCount": 1_500_000,
+            }
+        ],
+        "shorts": [],
+    }
+
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        create_response = client.post("/api/snapshots", json=payload)
+        snapshot_hash = create_response.json()["hash"]
+        page_response = client.get(f"/{snapshot_hash}")
+
+    assert page_response.status_code == 200
+    assert "1.5M views" in page_response.text
+    assert "1 hour ago" in page_response.text
 
 
 def test_get_snapshot_api_returns_404_for_unknown_hash(tmp_path: Path) -> None:

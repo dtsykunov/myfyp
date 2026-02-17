@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 import html
 
 from fastapi import FastAPI, HTTPException, Request
@@ -98,8 +99,9 @@ app = create_app()
 
 
 def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
-    videos = _render_video_grid(snapshot.payload.videos)
-    shorts = _render_shorts_grid(snapshot.payload.shorts)
+    metadata_reference_time = _resolve_metadata_reference_time(snapshot)
+    videos = _render_video_grid(snapshot.payload.videos, metadata_reference_time)
+    shorts = _render_shorts_grid(snapshot.payload.shorts, metadata_reference_time)
     escaped_hash = html.escape(snapshot.hash)
     return f"""<!doctype html>
 <html>
@@ -165,8 +167,21 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         width: 365px;
         height: 305px;
         background: var(--card);
-        border-radius: 10px;
+        border-radius: 14px;
         overflow: hidden;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition:
+          transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
+          background 300ms cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      }}
+
+      .video-card:hover {{
+        transform: translateY(-6px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+        background: #202020;
       }}
 
       .short-card {{
@@ -181,11 +196,69 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         display: block;
       }}
 
-      .video-card .thumb img {{
+      .video-card .thumb {{
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 365px;
         height: 205px;
+        overflow: hidden;
+      }}
+
+      .video-card .thumb img {{
+        width: 100%;
+        height: 100%;
         object-fit: cover;
         display: block;
+        transform: scale(1);
+        transition: transform 300ms ease;
+      }}
+
+      .video-card:hover .thumb img {{
+        transform: scale(1.05);
+      }}
+
+      .video-card .image-overlay {{
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0);
+        transition: background 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      }}
+
+      .video-card:hover .image-overlay {{
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 20%,
+          rgba(0, 0, 0, 0.45) 70%,
+          rgba(0, 0, 0, 0.6) 100%
+        );
+      }}
+
+      .video-card .play-icon {{
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 52px;
+        height: 52px;
+        margin-left: -26px;
+        margin-top: -26px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.55);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        transform: scale(0.9);
+        opacity: 0;
+        transition:
+          opacity 260ms cubic-bezier(0.4, 0, 0.2, 1),
+          transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+      }}
+
+      .video-card:hover .play-icon {{
+        opacity: 1;
+        transform: scale(1);
       }}
 
       .short-card .thumb img {{
@@ -210,8 +283,27 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         color: var(--muted);
       }}
 
-      .card-body {{
+      .short-card .card-body {{
         padding: 10px 12px;
+      }}
+
+      .video-card .card-body {{
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        min-height: 100px;
+        padding: 10px 12px;
+        background: linear-gradient(180deg, rgba(24, 24, 24, 0.9) 0%, rgba(24, 24, 24, 0.98) 100%);
+        transform: translateY(6px);
+        transition:
+          transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+          filter 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      }}
+
+      .video-card:hover .card-body {{
+        transform: translateY(0);
+        filter: brightness(1.06);
       }}
 
       .meta-line {{
@@ -234,6 +326,19 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         border-radius: 999px;
         object-fit: cover;
         flex-shrink: 0;
+      }}
+
+      .channel-avatar-placeholder {{
+        width: 22px;
+        height: 22px;
+        border-radius: 999px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #2a2a2a;
+        color: #9f9f9f;
+        font-size: 12px;
       }}
 
       .channel-name {{
@@ -294,7 +399,7 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
 """
 
 
-def _render_video_grid(items: list[RecommendationItem]) -> str:
+def _render_video_grid(items: list[RecommendationItem], metadata_reference_time: datetime) -> str:
     if not items:
         return '<p class="empty">No videos.</p>'
 
@@ -309,10 +414,12 @@ def _render_video_grid(items: list[RecommendationItem]) -> str:
                 '<article class="video-card">'
                 f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
                 f'<img src="{thumb}" alt="{escaped_title} thumbnail" loading="lazy">'
+                '<span class="image-overlay" aria-hidden="true"></span>'
+                '<span class="play-icon" aria-hidden="true">&#9658;</span>'
                 "</a>"
                 '<div class="card-body">'
                 f'<h3 class="title">{escaped_title}</h3>'
-                f"{_render_card_metadata(item)}"
+                f"{_render_video_card_metadata(item, metadata_reference_time)}"
                 "</div>"
                 "</article>"
             )
@@ -320,7 +427,7 @@ def _render_video_grid(items: list[RecommendationItem]) -> str:
     return f'<section class="videos-grid">{"".join(list_items)}</section>'
 
 
-def _render_shorts_grid(items: list[RecommendationItem]) -> str:
+def _render_shorts_grid(items: list[RecommendationItem], metadata_reference_time: datetime) -> str:
     if not items:
         return '<p class="empty">No shorts.</p>'
 
@@ -338,7 +445,7 @@ def _render_shorts_grid(items: list[RecommendationItem]) -> str:
                 "</a>"
                 '<div class="card-body">'
                 f'<h3 class="title">{escaped_title}</h3>'
-                f"{_render_card_metadata(item)}"
+                f"{_render_short_card_metadata(item, metadata_reference_time)}"
                 "</div>"
                 "</article>"
             )
@@ -346,39 +453,132 @@ def _render_shorts_grid(items: list[RecommendationItem]) -> str:
     return f'<section class="shorts-grid">{"".join(list_items)}</section>'
 
 
-def _render_card_metadata(item: RecommendationItem) -> str:
-    channel_html = _render_channel(item)
-    stats_html = _render_stats(item)
+def _render_video_card_metadata(item: RecommendationItem, metadata_reference_time: datetime) -> str:
+    channel_html = _render_channel_line(item, include_fallback=True)
+    stats_html = _render_stats_line(item, metadata_reference_time)
     return f"{channel_html}{stats_html}"
 
 
-def _render_channel(item: RecommendationItem) -> str:
-    if item.channel_name is None:
-        return ""
+def _render_short_card_metadata(item: RecommendationItem, metadata_reference_time: datetime) -> str:
+    channel_html = _render_channel_line(item, include_fallback=False)
+    stats_html = _render_stats_line(item, metadata_reference_time)
+    return f"{channel_html}{stats_html}"
 
-    name = html.escape(item.channel_name)
+
+def _render_channel_line(item: RecommendationItem, *, include_fallback: bool) -> str:
+    if item.channel_name is None and item.channel_link is None and item.channel_avatar is None:
+        if not include_fallback:
+            return ""
+        name = "Unknown channel"
+        avatar_html = '<span class="channel-avatar-placeholder" aria-hidden="true">?</span>'
+        return (
+            '<div class="channel">'
+            f"{avatar_html}"
+            f'<div class="channel-name">{html.escape(name)}</div>'
+            "</div>"
+        )
+
+    name_source = item.channel_name or _channel_name_from_link(item.channel_link) or "Unknown channel"
+    name = html.escape(name_source)
     name_html = name
     if item.channel_link is not None:
         escaped_link = html.escape(str(item.channel_link))
         name_html = f'<a href="{escaped_link}" target="_blank" rel="noopener noreferrer">{name}</a>'
 
-    avatar_html = ""
     if item.channel_avatar is not None:
         escaped_avatar = html.escape(str(item.channel_avatar))
         avatar_html = f'<img class="channel-avatar" src="{escaped_avatar}" alt="{name} avatar" loading="lazy">'
+    elif include_fallback:
+        avatar_html = '<span class="channel-avatar-placeholder" aria-hidden="true">?</span>'
+    else:
+        return ""
 
-    return f'<div class="channel">{avatar_html}<div class="channel-name">{name_html}</div></div>'
+    return (
+        '<div class="channel">'
+        f"{avatar_html}"
+        f'<div class="channel-name">{name_html}</div>'
+        "</div>"
+    )
 
 
-def _render_stats(item: RecommendationItem) -> str:
+def _channel_name_from_link(channel_link: object) -> str | None:
+    if channel_link is None:
+        return None
+    channel_link_text = str(channel_link).rstrip("/")
+    if not channel_link_text:
+        return None
+    last_segment = channel_link_text.rsplit("/", maxsplit=1)[-1]
+    if not last_segment:
+        return None
+    return last_segment
+
+
+def _render_stats_line(item: RecommendationItem, metadata_reference_time: datetime) -> str:
     parts: list[str] = []
     if item.view_count is not None:
-        parts.append(f"{item.view_count:,} views")
+        parts.append(html.escape(_format_compact_views(item.view_count)))
     if item.published_at is not None:
-        parts.append(item.published_at.date().isoformat())
+        parts.append(html.escape(_format_relative_time(item.published_at, metadata_reference_time)))
     if not parts:
         return ""
-    return f'<div class="meta-line">{html.escape(" • ".join(parts))}</div>'
+    return f'<div class="meta-line">{" • ".join(parts)}</div>'
+
+
+def _resolve_metadata_reference_time(snapshot: StoredSnapshot) -> datetime:
+    reference_time = snapshot.payload.captured_at or snapshot.created_at
+    return _to_utc(reference_time)
+
+
+def _to_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _format_relative_time(published_at: datetime, reference_time: datetime) -> str:
+    published = _to_utc(published_at)
+    reference = _to_utc(reference_time)
+    delta_seconds = max(0, int((reference - published).total_seconds()))
+    if delta_seconds <= 0:
+        return "just now"
+
+    intervals = (
+        ("year", 31_536_000),
+        ("month", 2_592_000),
+        ("week", 604_800),
+        ("day", 86_400),
+        ("hour", 3_600),
+        ("minute", 60),
+        ("second", 1),
+    )
+    for unit_name, unit_seconds in intervals:
+        amount = delta_seconds // unit_seconds
+        if amount < 1:
+            continue
+        suffix = "" if amount == 1 else "s"
+        return f"{amount} {unit_name}{suffix} ago"
+
+    return "just now"
+
+
+def _format_compact_views(view_count: int) -> str:
+    if view_count < 1_000:
+        return f"{view_count} views"
+    if view_count < 1_000_000:
+        value = view_count / 1_000
+        suffix = "K"
+    elif view_count < 1_000_000_000:
+        value = view_count / 1_000_000
+        suffix = "M"
+    else:
+        value = view_count / 1_000_000_000
+        suffix = "B"
+
+    if value >= 10:
+        compact_value = f"{value:.0f}"
+    else:
+        compact_value = f"{value:.1f}".rstrip("0").rstrip(".")
+    return f"{compact_value}{suffix} views"
 
 
 def _client_ip(request: Request) -> str:
