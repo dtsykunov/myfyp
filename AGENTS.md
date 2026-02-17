@@ -39,6 +39,10 @@ This file defines working rules for AI agents and human contributors in this rep
    - Sign commits with name/email (`git commit -s`).
    - Use clear, comprehensible commit messages describing the change.
    - Ensure linting and tests pass before committing.
+8. Ensure local and CI reproducibility:
+   - All features and checks must be runnable and testable on a contributor's local machine and in CI.
+   - Prefer containerized workflows (Docker/Docker Compose) to standardize runtime, dependencies, and test execution.
+   - Keep setup instructions and CI commands aligned so local and CI behavior stay consistent.
 
 ## Task Execution Protocol (Required)
 
@@ -70,5 +74,6 @@ For each non-trivial task, the agent must follow this sequence:
 - Behavior matches requirements.
 - Tests added/updated and passing.
 - Lints/format checks passing.
+- Validation is reproducible locally and in CI (preferably via Docker workflow).
 - Boundaries between extension/API/frontend remain clean.
 - No unnecessary complexity added.
