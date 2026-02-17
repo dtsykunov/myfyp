@@ -169,27 +169,38 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         background: var(--card);
         border-radius: 14px;
         overflow: hidden;
-        position: relative;
+        border: 1px solid transparent;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         transition:
-          transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
-          box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1),
-          background 300ms cubic-bezier(0.4, 0, 0.2, 1),
-          opacity 300ms cubic-bezier(0.4, 0, 0.2, 1);
+          transform 250ms ease,
+          box-shadow 250ms ease,
+          border-color 250ms ease;
       }}
 
       .video-card:hover {{
-        transform: translateY(-6px);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
-        background: #202020;
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+        border-color: rgba(255, 255, 255, 0.12);
       }}
 
       .short-card {{
         width: 365px;
         height: 547px;
         background: var(--card);
-        border-radius: 10px;
+        border-radius: 14px;
         overflow: hidden;
+        border: 1px solid transparent;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition:
+          transform 250ms ease,
+          box-shadow 250ms ease,
+          border-color 250ms ease;
+      }}
+
+      .short-card:hover {{
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+        border-color: rgba(255, 255, 255, 0.12);
       }}
 
       .thumb {{
@@ -197,12 +208,8 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
       }}
 
       .video-card .thumb {{
-        position: absolute;
-        top: 0;
-        left: 0;
         width: 365px;
         height: 205px;
-        overflow: hidden;
       }}
 
       .video-card .thumb img {{
@@ -210,55 +217,6 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         height: 100%;
         object-fit: cover;
         display: block;
-        transform: scale(1);
-        transition: transform 300ms ease;
-      }}
-
-      .video-card:hover .thumb img {{
-        transform: scale(1.05);
-      }}
-
-      .video-card .image-overlay {{
-        position: absolute;
-        inset: 0;
-        background: rgba(0, 0, 0, 0);
-        transition: background 300ms cubic-bezier(0.4, 0, 0.2, 1);
-      }}
-
-      .video-card:hover .image-overlay {{
-        background: linear-gradient(
-          to bottom,
-          rgba(0, 0, 0, 0) 20%,
-          rgba(0, 0, 0, 0.45) 70%,
-          rgba(0, 0, 0, 0.6) 100%
-        );
-      }}
-
-      .video-card .play-icon {{
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 52px;
-        height: 52px;
-        margin-left: -26px;
-        margin-top: -26px;
-        border-radius: 999px;
-        background: rgba(0, 0, 0, 0.55);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        transform: scale(0.9);
-        opacity: 0;
-        transition:
-          opacity 260ms cubic-bezier(0.4, 0, 0.2, 1),
-          transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
-      }}
-
-      .video-card:hover .play-icon {{
-        opacity: 1;
-        transform: scale(1);
       }}
 
       .short-card .thumb img {{
@@ -288,22 +246,7 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
       }}
 
       .video-card .card-body {{
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        min-height: 100px;
-        padding: 10px 12px;
-        background: linear-gradient(180deg, rgba(24, 24, 24, 0.9) 0%, rgba(24, 24, 24, 0.98) 100%);
-        transform: translateY(6px);
-        transition:
-          transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
-          filter 300ms cubic-bezier(0.4, 0, 0.2, 1);
-      }}
-
-      .video-card:hover .card-body {{
-        transform: translateY(0);
-        filter: brightness(1.06);
+        padding: 12px;
       }}
 
       .meta-line {{
@@ -313,24 +256,58 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         line-height: 1.25;
       }}
 
-      .channel {{
+      .card-meta {{
         display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 8px;
+        gap: 12px;
+        align-items: flex-start;
+      }}
+
+      .meta-text {{
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        flex: 1;
+      }}
+
+      .video-title {{
+        margin: 0 0 6px;
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.3;
+        color: var(--text);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }}
+
+      .channel-line {{
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }}
+
+      .channel-row {{
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.3;
       }}
 
       .channel-avatar {{
-        width: 22px;
-        height: 22px;
+        width: 36px;
+        height: 36px;
         border-radius: 999px;
         object-fit: cover;
         flex-shrink: 0;
       }}
 
       .channel-avatar-placeholder {{
-        width: 22px;
-        height: 22px;
+        width: 36px;
+        height: 36px;
         border-radius: 999px;
         flex-shrink: 0;
         display: flex;
@@ -338,23 +315,15 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         justify-content: center;
         background: #2a2a2a;
         color: #9f9f9f;
-        font-size: 12px;
+        font-size: 14px;
       }}
 
-      .channel-name {{
-        color: var(--muted);
-        font-size: 12px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }}
-
-      .channel-name a {{
+      .channel-line a {{
         color: inherit;
         text-decoration: none;
       }}
 
-      .channel-name a:hover {{
+      .channel-line a:hover {{
         text-decoration: underline;
       }}
 
@@ -414,11 +383,8 @@ def _render_video_grid(items: list[RecommendationItem], metadata_reference_time:
                 '<article class="video-card">'
                 f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
                 f'<img src="{thumb}" alt="{escaped_title} thumbnail" loading="lazy">'
-                '<span class="image-overlay" aria-hidden="true"></span>'
-                '<span class="play-icon" aria-hidden="true">&#9658;</span>'
                 "</a>"
                 '<div class="card-body">'
-                f'<h3 class="title">{escaped_title}</h3>'
                 f"{_render_video_card_metadata(item, metadata_reference_time)}"
                 "</div>"
                 "</article>"
@@ -454,51 +420,53 @@ def _render_shorts_grid(items: list[RecommendationItem], metadata_reference_time
 
 
 def _render_video_card_metadata(item: RecommendationItem, metadata_reference_time: datetime) -> str:
-    channel_html = _render_channel_line(item, include_fallback=True)
-    stats_html = _render_stats_line(item, metadata_reference_time)
-    return f"{channel_html}{stats_html}"
+    title_html = html.escape(item.title)
+    avatar_html = _render_channel_avatar(item, include_fallback=True)
+    channel_html = _render_channel_name(item, include_fallback=True)
+    stats_text = _render_stats_text(item, metadata_reference_time)
+    stats_html = f'<div class="channel-row">{html.escape(stats_text)}</div>' if stats_text else ""
+    return (
+        '<div class="card-meta">'
+        f"{avatar_html}"
+        '<div class="meta-text">'
+        f'<h3 class="video-title">{title_html}</h3>'
+        f'<div class="channel-line">{channel_html}</div>'
+        f"{stats_html}"
+        "</div>"
+        "</div>"
+    )
 
 
 def _render_short_card_metadata(item: RecommendationItem, metadata_reference_time: datetime) -> str:
-    channel_html = _render_channel_line(item, include_fallback=False)
+    channel_html = _render_channel_name(item, include_fallback=False)
     stats_html = _render_stats_line(item, metadata_reference_time)
-    return f"{channel_html}{stats_html}"
+    if not channel_html:
+        return stats_html
+    return f'<div class="channel-line">{channel_html}</div>{stats_html}'
 
 
-def _render_channel_line(item: RecommendationItem, *, include_fallback: bool) -> str:
-    if item.channel_name is None and item.channel_link is None and item.channel_avatar is None:
+def _render_channel_name(item: RecommendationItem, *, include_fallback: bool) -> str:
+    if item.channel_name is None and item.channel_link is None:
         if not include_fallback:
             return ""
-        name = "Unknown channel"
-        avatar_html = '<span class="channel-avatar-placeholder" aria-hidden="true">?</span>'
-        return (
-            '<div class="channel">'
-            f"{avatar_html}"
-            f'<div class="channel-name">{html.escape(name)}</div>'
-            "</div>"
-        )
-
+        return html.escape("Unknown channel")
     name_source = item.channel_name or _channel_name_from_link(item.channel_link) or "Unknown channel"
     name = html.escape(name_source)
     name_html = name
     if item.channel_link is not None:
         escaped_link = html.escape(str(item.channel_link))
         name_html = f'<a href="{escaped_link}" target="_blank" rel="noopener noreferrer">{name}</a>'
+    return name_html
 
+
+def _render_channel_avatar(item: RecommendationItem, *, include_fallback: bool) -> str:
     if item.channel_avatar is not None:
         escaped_avatar = html.escape(str(item.channel_avatar))
-        avatar_html = f'<img class="channel-avatar" src="{escaped_avatar}" alt="{name} avatar" loading="lazy">'
-    elif include_fallback:
-        avatar_html = '<span class="channel-avatar-placeholder" aria-hidden="true">?</span>'
-    else:
-        return ""
-
-    return (
-        '<div class="channel">'
-        f"{avatar_html}"
-        f'<div class="channel-name">{name_html}</div>'
-        "</div>"
-    )
+        avatar_label = html.escape(item.channel_name or "Channel")
+        return f'<img class="channel-avatar" src="{escaped_avatar}" alt="{avatar_label} avatar" loading="lazy">'
+    if include_fallback:
+        return '<span class="channel-avatar-placeholder" aria-hidden="true">?</span>'
+    return ""
 
 
 def _channel_name_from_link(channel_link: object) -> str | None:
@@ -514,14 +482,19 @@ def _channel_name_from_link(channel_link: object) -> str | None:
 
 
 def _render_stats_line(item: RecommendationItem, metadata_reference_time: datetime) -> str:
+    stats_text = _render_stats_text(item, metadata_reference_time)
+    if not stats_text:
+        return ""
+    return f'<div class="meta-line">{html.escape(stats_text)}</div>'
+
+
+def _render_stats_text(item: RecommendationItem, metadata_reference_time: datetime) -> str:
     parts: list[str] = []
     if item.view_count is not None:
-        parts.append(html.escape(_format_compact_views(item.view_count)))
+        parts.append(_format_compact_views(item.view_count))
     if item.published_at is not None:
-        parts.append(html.escape(_format_relative_time(item.published_at, metadata_reference_time)))
-    if not parts:
-        return ""
-    return f'<div class="meta-line">{" • ".join(parts)}</div>'
+        parts.append(_format_relative_time(item.published_at, metadata_reference_time))
+    return " • ".join(parts)
 
 
 def _resolve_metadata_reference_time(snapshot: StoredSnapshot) -> datetime:
