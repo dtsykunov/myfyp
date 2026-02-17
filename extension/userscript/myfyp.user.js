@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://myfyp.link
-// @version      0.1.11
+// @version      0.1.13
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
@@ -36,6 +36,7 @@
     year: 31536000,
   };
   const API_BASE_URL_STORAGE_KEY = "forUsPage.apiBaseUrl";
+  const API_BASE_URL_MIGRATION_KEY = "forUsPage.apiBaseUrlMigratedFromLocalhost";
   const DEBUG_STORAGE_KEY = "forUsPage.debug";
   const DEFAULT_API_BASE_URL = "https://myfyp.link";
   const TOAST_ID = "for-us-page-toast";
@@ -532,7 +533,38 @@
     return String(url || "").trim().replace(/\/+$/, "");
   }
 
+  function isLegacyLocalApiBaseUrl(baseUrl) {
+    const normalized = normalizeApiBaseUrl(baseUrl);
+    if (!normalized) {
+      return false;
+    }
+    try {
+      const parsed = new URL(normalized);
+      const isLoopbackHost =
+        parsed.hostname === "127.0.0.1" || parsed.hostname === "localhost";
+      const hasDefaultDevPort = !parsed.port || parsed.port === "8000";
+      return parsed.protocol === "http:" && isLoopbackHost && hasDefaultDevPort;
+    } catch {
+      return false;
+    }
+  }
+
+  function migrateLegacyApiBaseUrl() {
+    const alreadyMigrated = pageWindow.localStorage.getItem(API_BASE_URL_MIGRATION_KEY) === "1";
+    if (alreadyMigrated) {
+      return;
+    }
+    const fromStorage = pageWindow.localStorage.getItem(API_BASE_URL_STORAGE_KEY);
+    if (!isLegacyLocalApiBaseUrl(fromStorage)) {
+      pageWindow.localStorage.setItem(API_BASE_URL_MIGRATION_KEY, "1");
+      return;
+    }
+    pageWindow.localStorage.setItem(API_BASE_URL_STORAGE_KEY, DEFAULT_API_BASE_URL);
+    pageWindow.localStorage.setItem(API_BASE_URL_MIGRATION_KEY, "1");
+  }
+
   function getApiBaseUrl() {
+    migrateLegacyApiBaseUrl();
     const fromStorage = pageWindow.localStorage.getItem(API_BASE_URL_STORAGE_KEY);
     return normalizeApiBaseUrl(fromStorage || DEFAULT_API_BASE_URL);
   }
@@ -629,6 +661,38 @@
     return normalized;
   }
 
+  function extractApiErrorDetail(bodyText) {
+    const normalizedBody = normalizeText(bodyText);
+    if (!normalizedBody) {
+      return "";
+    }
+    try {
+      const parsed = JSON.parse(normalizedBody);
+      if (!parsed || typeof parsed !== "object") {
+        return normalizedBody;
+      }
+      const detail = parsed.detail;
+      if (typeof detail === "string" && detail.trim()) {
+        return normalizeText(detail);
+      }
+      if (Array.isArray(detail) && detail.length > 0) {
+        return normalizeText(JSON.stringify(detail));
+      }
+      return normalizedBody;
+    } catch {
+      return normalizedBody;
+    }
+  }
+
+  function buildApiErrorMessage(status, statusText, bodyText) {
+    const base = `API request failed: ${status}${statusText ? ` ${statusText}` : ""}`;
+    const detail = extractApiErrorDetail(bodyText);
+    if (!detail) {
+      return base;
+    }
+    return `${base}. ${detail}`;
+  }
+
   function postSnapshotWithGmRequest(apiBaseUrl, snapshot) {
     return new Promise((resolve, reject) => {
       GM_xmlhttpRequest({
@@ -638,9 +702,10 @@
         data: JSON.stringify(snapshot),
         onload: (response) => {
           if (response.status < 200 || response.status >= 300) {
+            const responseBody = typeof response.responseText === "string" ? response.responseText : "";
             reject(
               new Error(
-                `API request failed: ${response.status} ${response.statusText}`
+                buildApiErrorMessage(response.status, response.statusText || "", responseBody)
               )
             );
             return;
@@ -668,10 +733,19 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(snapshot),
     });
+    const responseBody = await response.text();
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+      throw new Error(buildApiErrorMessage(response.status, response.statusText, responseBody));
     }
-    return response.json();
+    try {
+      return JSON.parse(responseBody);
+    } catch (error) {
+      throw new Error(
+        `Failed to parse API response: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    }
   }
 
   async function uploadSnapshot(snapshot, apiBaseUrl = getApiBaseUrl()) {

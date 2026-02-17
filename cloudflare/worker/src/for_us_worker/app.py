@@ -104,8 +104,8 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
         return json_response({"detail": _extract_validation_errors(exc)}, status=422)
     except ValueError as exc:
         return json_response({"detail": str(exc)}, status=400)
-    except Exception:
-        return json_response({"detail": "Internal server error."}, status=500)
+    except Exception as exc:
+        return json_response({"detail": f"Internal server error: {exc}"}, status=500)
 
 
 async def handle_scheduled(env: WorkerEnv) -> None:
