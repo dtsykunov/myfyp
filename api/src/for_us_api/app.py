@@ -103,12 +103,13 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
     videos = _render_video_grid(snapshot.payload.videos, metadata_reference_time)
     shorts = _render_shorts_grid(snapshot.payload.shorts, metadata_reference_time)
     escaped_hash = html.escape(snapshot.hash)
+    escaped_taken_at = html.escape(_format_snapshot_taken_at(metadata_reference_time))
     return f"""<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>For Us Page - {escaped_hash}</title>
+    <title>For You Page - {escaped_hash}</title>
     <style>
       :root {{
         --bg: #0f0f0f;
@@ -134,19 +135,67 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         padding: 20px;
       }}
 
+      .top-header {{
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 12px;
+      }}
+
+      .brand-logo {{
+        width: 29px;
+        height: 20px;
+        flex-shrink: 0;
+      }}
+
+      .brand-logo svg {{
+        width: 29px;
+        height: 20px;
+        display: block;
+      }}
+
       h1 {{
-        margin: 0 0 8px;
+        margin: 0;
         font-size: 28px;
       }}
 
       .meta {{
-        margin: 0 0 24px;
+        margin: 0;
         color: var(--muted);
+        font-size: 14px;
+        line-height: 1.4;
+      }}
+
+      .meta-stack {{
+        margin: 0 0 24px;
+        display: grid;
+        gap: 2px;
       }}
 
       .section-title {{
         margin: 24px 0 12px;
         font-size: 22px;
+      }}
+
+      .shorts-section-title {{
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }}
+
+      .shorts-icon {{
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }}
+
+      .shorts-icon svg {{
+        width: 24px;
+        height: 24px;
+        display: block;
       }}
 
       .videos-grid {{
@@ -403,11 +452,30 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
   </head>
   <body>
     <main>
-      <h1>For Us Page</h1>
-      <p class="meta">Snapshot hash: <code>{escaped_hash}</code></p>
+      <header class="top-header">
+        <span class="brand-logo" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="29" height="20" viewBox="0 0 29 20" focusable="false" aria-hidden="true">
+            <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
+            <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
+          </svg>
+        </span>
+        <h1>For You Page</h1>
+      </header>
+      <div class="meta-stack">
+        <p class="meta">Taken at: <code>{escaped_taken_at}</code></p>
+        <p class="meta">Snapshot hash: <code>{escaped_hash}</code></p>
+      </div>
       <h2 class="section-title">Videos</h2>
       {videos}
-      <h2 class="section-title">Shorts</h2>
+      <h2 class="section-title shorts-section-title">
+        <span class="shorts-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+            <path d="m19.45,3.88c1.12,1.82.48,4.15-1.42,5.22l-1.32.74.94.41c1.36.58,2.27,1.85,2.35,3.27.08,1.43-.68,2.77-1.97,3.49l-8,4.47c-1.91,1.06-4.35.46-5.48-1.35-1.12-1.82-.48-4.15,1.42-5.22l1.33-.74-.94-.41c-1.36-.58-2.27-1.85-2.35-3.27-.08-1.43.68-2.77,1.97-3.49l8-4.47c1.91-1.06,4.35-.46,5.48,1.35Z" fill="#f03"></path>
+            <path d="m10,15l5-3-5-3v6Z" fill="#fff"></path>
+          </svg>
+        </span>
+        <span>Shorts</span>
+      </h2>
       {shorts}
     </main>
   </body>
@@ -547,6 +615,11 @@ def _render_stats_text(item: RecommendationItem, metadata_reference_time: dateti
 def _resolve_metadata_reference_time(snapshot: StoredSnapshot) -> datetime:
     reference_time = snapshot.payload.captured_at or snapshot.created_at
     return _to_utc(reference_time)
+
+
+def _format_snapshot_taken_at(taken_at: datetime) -> str:
+    normalized = _to_utc(taken_at)
+    return normalized.strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def _to_utc(value: datetime) -> datetime:

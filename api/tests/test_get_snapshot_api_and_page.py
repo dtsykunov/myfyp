@@ -68,7 +68,8 @@ def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> 
         page_response = client.get(f"/{snapshot_hash}")
 
     assert page_response.status_code == 200
-    assert "<h1>For Us Page</h1>" in page_response.text
+    assert "<h1>For You Page</h1>" in page_response.text
+    assert "Taken at: <code>2026-02-17 11:00:00 UTC</code>" in page_response.text
     assert "https://www.youtube.com/watch?v=lzChIIJMpGk" in page_response.text
     assert "https://www.youtube.com/shorts/dQw4w9WgXcQ" in page_response.text
     assert "deadlock: items for idiot" in page_response.text
