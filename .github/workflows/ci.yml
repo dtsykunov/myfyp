@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  api-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build API image
+        run: docker compose build api-test
+
+      - name: Run API lint in container
+        run: docker compose run --rm api-lint
+
+      - name: Run API tests in container
+        run: docker compose run --rm api-test

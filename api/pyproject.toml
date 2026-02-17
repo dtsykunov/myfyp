@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "for-us-api"
+version = "0.1.0"
+description = "API for sharing temporary YouTube recommendation snapshots."
+requires-python = ">=3.13"
+dependencies = [
+  "fastapi==0.121.1",
+  "uvicorn[standard]==0.38.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.2",
+  "httpx==0.28.1",
+  "ruff==0.15.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

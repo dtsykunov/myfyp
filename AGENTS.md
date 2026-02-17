@@ -41,8 +41,9 @@ This file defines working rules for AI agents and human contributors in this rep
    - Ensure linting and tests pass before committing.
 8. Ensure local and CI reproducibility:
    - All features and checks must be runnable and testable on a contributor's local machine and in CI.
-   - Prefer containerized workflows (Docker/Docker Compose) to standardize runtime, dependencies, and test execution.
-   - Keep setup instructions and CI commands aligned so local and CI behavior stay consistent.
+   - Local runs must use the repository Nix flake dev shell (`nix develop`) as the default workflow.
+   - CI must use Docker/Docker Compose.
+   - Keep local (Nix) and CI (Docker) environments as similar as practical (language/runtime versions, dependencies, and commands).
 
 ## Task Execution Protocol (Required)
 
@@ -63,7 +64,7 @@ For each non-trivial task, the agent must follow this sequence:
    - Present the proposed plan to the user and confirm it is acceptable before implementation.
 6. Implement:
    - Execute the approved TODOs.
-   - Run required checks (tests, lint, formatting, type checks where applicable).
+   - Run required checks (tests, lint, formatting, type checks where applicable) using `nix develop` locally.
    - Do not mark tasks done until all TODOs are completed and checks pass.
 7. Commit:
    - Commit only after successful checks.

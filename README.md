@@ -34,6 +34,43 @@ This project lets a user capture their current YouTube home feed and share it wi
 - **Backend API:** Python + FastAPI
 - **Database:** SQLite
 - **Rendered page:** Plain HTML
+- **MVP browser component:** Userscript (initial scaffold)
+
+## Repository Layout
+
+- `extension/`: browser-side MVP userscript scaffold.
+- `api/`: Python/FastAPI service scaffold with tests.
+- `flake.nix`: Nix flake dev shell for local reproducible runs.
+- `.github/workflows/ci.yml`: CI that runs API tests via Docker.
+- `docker-compose.yml`: local container workflow for run/test parity.
+
+## Current Scaffold Status
+
+- Extension:
+  - Userscript shell exists (`extension/userscript/for-us-page.user.js`).
+  - YouTube parsing + API upload behavior are TODO.
+- API:
+  - FastAPI app scaffold exists with `GET /health`.
+  - Pyproject-based packaging and pytest setup are configured.
+  - One baseline test validates API boot and health endpoint.
+
+## Run and Test
+
+### Local (Nix Flake)
+
+```bash
+nix develop --command sh -c "cd api && ./scripts/run-tests.sh"
+nix develop --command sh -c "cd api && ./scripts/run-lint.sh"
+nix develop --command sh -c "cd api && ./scripts/run-api.sh"
+```
+
+### CI Path / Container Path (Docker)
+
+```bash
+docker compose run --rm api-lint
+docker compose run --rm api-test
+docker compose up api
+```
 
 ## Notes for Contributors / AI Agents
 

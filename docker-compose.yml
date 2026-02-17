@@ -1,0 +1,25 @@
+services:
+  api:
+    build:
+      context: ./api
+    image: for-us-api:dev
+    command: ./scripts/run-api.sh
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api/src:/app/src
+      - ./api/tests:/app/tests
+      - ./api/scripts:/app/scripts
+      - ./api/pyproject.toml:/app/pyproject.toml:ro
+
+  api-test:
+    build:
+      context: ./api
+    image: for-us-api:dev
+    command: ./scripts/run-tests.sh
+
+  api-lint:
+    build:
+      context: ./api
+    image: for-us-api:dev
+    command: ./scripts/run-lint.sh
