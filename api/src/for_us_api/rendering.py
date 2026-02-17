@@ -128,6 +128,21 @@ def render_home_html(userscript_url: str) -> str:
         color: #8ab4ff;
         word-break: break-all;
       }}
+
+      .privacy-footer {{
+        margin-top: 18px;
+        text-align: center;
+      }}
+
+      .privacy-link {{
+        color: #8ab4ff;
+        font-size: 13px;
+        text-decoration: none;
+      }}
+
+      .privacy-link:hover {{
+        text-decoration: underline;
+      }}
     </style>
   </head>
   <body>
@@ -154,6 +169,9 @@ def render_home_html(userscript_url: str) -> str:
           <li>Open the returned snapshot link to view the rendered page.</li>
         </ol>
       </section>
+      <footer class="privacy-footer">
+        <a class="privacy-link" href="/privacy">Privacy Notice</a>
+      </footer>
     </main>
   </body>
 </html>
@@ -210,6 +228,21 @@ def render_privacy_html() -> str:
         color: var(--muted);
         font-size: 13px;
       }
+
+      .privacy-footer {
+        margin-top: 22px;
+        text-align: center;
+      }
+
+      .privacy-link {
+        color: #8ab4ff;
+        font-size: 13px;
+        text-decoration: none;
+      }
+
+      .privacy-link:hover {
+        text-decoration: underline;
+      }
     </style>
   </head>
   <body>
@@ -233,6 +266,9 @@ def render_privacy_html() -> str:
       <p>Data is used only to render the shared snapshot page and is not used for advertising.</p>
 
       <p class="muted">Last updated: February 17, 2026</p>
+      <footer class="privacy-footer">
+        <a class="privacy-link" href="/privacy">Privacy Notice</a>
+      </footer>
     </main>
   </body>
 </html>
@@ -576,6 +612,18 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
         color: var(--muted);
       }}
 
+      .privacy-link {{
+        margin-top: 4px;
+        display: inline-block;
+        color: #8ab4ff;
+        font-size: 13px;
+        text-decoration: none;
+      }}
+
+      .privacy-link:hover {{
+        text-decoration: underline;
+      }}
+
       @media (max-width: 2280px) {{
         .videos-grid {{
           grid-template-columns: repeat(5, 365px);
@@ -683,6 +731,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
           <h3 class="faq-question">2. Why?</h3>
           <p class="faq-answer">To quickly share and compare what YouTube was recommending to someone without requiring account access.</p>
         </section>
+        <a class="privacy-link" href="/privacy">Privacy Notice</a>
       </footer>
     </main>
     <script>
