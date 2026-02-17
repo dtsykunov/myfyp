@@ -158,14 +158,14 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
 
       .shorts-grid {{
         display: grid;
-        grid-template-columns: repeat(auto-fill, 365px);
+        grid-template-columns: repeat(6, 365px);
         gap: 16px;
         justify-content: center;
       }}
 
       .video-card {{
         width: 365px;
-        height: 305px;
+        min-height: 305px;
         background: var(--card);
         border-radius: 14px;
         overflow: hidden;
@@ -185,7 +185,7 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
 
       .short-card {{
         width: 365px;
-        height: 547px;
+        min-height: 547px;
         background: var(--card);
         border-radius: 14px;
         overflow: hidden;
@@ -209,7 +209,12 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
 
       .video-card .thumb {{
         width: 365px;
-        height: 205px;
+        aspect-ratio: 16 / 9;
+      }}
+
+      .short-card .thumb {{
+        width: 365px;
+        aspect-ratio: 3 / 4;
       }}
 
       .video-card .thumb img {{
@@ -220,8 +225,8 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
       }}
 
       .short-card .thumb img {{
-        width: 365px;
-        height: 487px;
+        width: 100%;
+        height: 100%;
         object-fit: cover;
         display: block;
       }}
@@ -329,6 +334,18 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
 
       @media (max-width: 2280px) {{
         .videos-grid {{
+          grid-template-columns: repeat(5, 365px);
+        }}
+        .shorts-grid {{
+          grid-template-columns: repeat(5, 365px);
+        }}
+      }}
+
+      @media (max-width: 1900px) {{
+        .videos-grid {{
+          grid-template-columns: repeat(4, 365px);
+        }}
+        .shorts-grid {{
           grid-template-columns: repeat(4, 365px);
         }}
       }}
@@ -337,19 +354,49 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         .videos-grid {{
           grid-template-columns: repeat(3, 365px);
         }}
+        .shorts-grid {{
+          grid-template-columns: repeat(3, 365px);
+        }}
       }}
 
       @media (max-width: 1140px) {{
-        .videos-grid,
+        .videos-grid {{
+          grid-template-columns: repeat(2, 365px);
+        }}
         .shorts-grid {{
           grid-template-columns: repeat(2, 365px);
         }}
       }}
 
       @media (max-width: 760px) {{
-        .videos-grid,
+        .videos-grid {{
+          grid-template-columns: repeat(1, minmax(0, 1fr));
+        }}
+
         .shorts-grid {{
-          grid-template-columns: repeat(1, 365px);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }}
+
+        .video-card {{
+          width: 100%;
+        }}
+
+        .video-card .thumb {{
+          width: 100%;
+        }}
+
+        .short-card {{
+          width: 100%;
+          min-height: 0;
+        }}
+
+        .short-card .thumb {{
+          width: 100%;
+        }}
+
+        .short-card .card-body {{
+          padding: 10px 8px;
         }}
       }}
     </style>
