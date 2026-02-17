@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import json
+import math
 import secrets
 import string
 from typing import cast
@@ -157,14 +158,23 @@ def _to_mapping(row: object | None) -> Mapping[str, object] | None:
 
 
 def _extract_changes(result: object) -> int:
-    if isinstance(result, Mapping):
-        result_mapping = cast(Mapping[str, object], result)
-        meta = result_mapping.get("meta")
-        if isinstance(meta, Mapping):
-            meta_mapping = cast(Mapping[str, object], meta)
-            changes = meta_mapping.get("changes")
-            if isinstance(changes, int):
-                return changes
+    result_mapping = _to_mapping(result)
+    if result_mapping is None:
+        return 0
+
+    meta_mapping = _to_mapping(result_mapping.get("meta"))
+    if meta_mapping is None:
+        return 0
+
+    changes = meta_mapping.get("changes")
+    if isinstance(changes, bool):
+        return 0
+    if isinstance(changes, int):
+        return max(changes, 0)
+    if isinstance(changes, float):
+        if not math.isfinite(changes):
+            return 0
+        return max(int(changes), 0)
     return 0
 
 

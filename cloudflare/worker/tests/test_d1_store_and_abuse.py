@@ -79,6 +79,7 @@ def test_d1_store_delete_expired_and_helpers() -> None:
     assert deleted == 1
 
     assert d1_store._extract_changes({"meta": {"changes": 2}}) == 2
+    assert d1_store._extract_changes({"meta": {"changes": 2.0}}) == 2
     assert d1_store._extract_changes({"meta": {"changes": "2"}}) == 0
     assert d1_store._extract_changes({}) == 0
 
@@ -134,5 +135,6 @@ def test_d1_abuse_rate_limits_quotas_and_cleanup() -> None:
 
     assert len(d1_abuse._hash_ip("  ")) == 64
     assert d1_abuse._extract_changes({"meta": {"changes": 3}}) == 3
+    assert d1_abuse._extract_changes({"meta": {"changes": 3.0}}) == 3
     assert d1_abuse._extract_changes({"meta": {"changes": "3"}}) == 0
     assert d1_abuse._to_utc(datetime(2026, 2, 17, 12, 0)).tzinfo == timezone.utc

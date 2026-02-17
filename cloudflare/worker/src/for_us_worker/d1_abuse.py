@@ -4,6 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 import hashlib
+import math
 from typing import cast
 
 from for_us_shared.abuse import AbuseConfig
@@ -141,12 +142,32 @@ def _hash_ip(client_ip: str) -> str:
 
 
 def _extract_changes(result: object) -> int:
-    if isinstance(result, Mapping):
-        result_mapping = cast(Mapping[str, object], result)
-        meta = result_mapping.get("meta")
-        if isinstance(meta, Mapping):
-            meta_mapping = cast(Mapping[str, object], meta)
-            changes = meta_mapping.get("changes")
-            if isinstance(changes, int):
-                return changes
+    result_mapping = _to_mapping(result)
+    if result_mapping is None:
+        return 0
+
+    meta_mapping = _to_mapping(result_mapping.get("meta"))
+    if meta_mapping is None:
+        return 0
+
+    changes = meta_mapping.get("changes")
+    if isinstance(changes, bool):
+        return 0
+    if isinstance(changes, int):
+        return max(changes, 0)
+    if isinstance(changes, float):
+        if not math.isfinite(changes):
+            return 0
+        return max(int(changes), 0)
     return 0
+
+
+def _to_mapping(value: object) -> Mapping[str, object] | None:
+    if isinstance(value, Mapping):
+        return cast(Mapping[str, object], value)
+    to_py = getattr(value, "to_py", None)
+    if callable(to_py):
+        converted = to_py()
+        if isinstance(converted, Mapping):
+            return cast(Mapping[str, object], converted)
+    return None
