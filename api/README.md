@@ -6,6 +6,8 @@ This directory contains the initial API scaffold.
 
 - `GET /health`
 - `POST /api/snapshots`: validates and stores recommendation payload in SQLite, returns `hash` and `expiresAt`.
+- `GET /api/snapshots/{hash}`: returns stored payload JSON for an active snapshot.
+- `GET /{hash}`: renders a basic server-side HTML page for the snapshot.
 
 ## Local (Nix Flake)
 

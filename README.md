@@ -53,6 +53,8 @@ This project lets a user capture their current YouTube home feed and share it wi
   - FastAPI app scaffold exists with `GET /health`.
   - Typed request/response/domain models are defined for snapshot payloads.
   - `POST /api/snapshots` stores payload in SQLite and returns share hash + expiry.
+  - `GET /api/snapshots/{hash}` retrieves stored payload.
+  - `GET /{hash}` renders a basic server-side HTML page for sharing.
   - Pyproject-based packaging, lint, strict type-checking, and pytest setup are configured.
   - Baseline tests validate API boot and model validation rules.
 
@@ -79,6 +81,10 @@ Example response:
   "expiresAt": "2026-02-24T11:00:00Z"
 }
 ```
+
+`GET /api/snapshots/{hash}` returns the stored payload JSON.
+
+`GET /{hash}` returns a minimal rendered HTML page listing videos and shorts.
 
 ## Run and Test
 

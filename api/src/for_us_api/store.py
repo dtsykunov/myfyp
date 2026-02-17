@@ -8,6 +8,7 @@ import sqlite3
 import string
 
 from for_us_api.models import CreateSnapshotRequest, CreateSnapshotResponse
+from for_us_api.models import StoredSnapshot
 
 DATABASE_PATH_ENV_VAR = "FOR_US_DB_PATH"
 DEFAULT_DATABASE_PATH = "data/for-us.db"
@@ -96,3 +97,34 @@ class SnapshotStore:
 
     def _generate_hash(self) -> str:
         return "".join(secrets.choice(HASH_ALPHABET) for _ in range(HASH_LENGTH))
+
+    def get_snapshot(
+        self, snapshot_hash: str, now: datetime | None = None
+    ) -> tuple[StoredSnapshot | None, bool]:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                SELECT hash, created_at, expires_at, payload_json
+                FROM snapshots
+                WHERE hash = ?
+                """,
+                (snapshot_hash,),
+            )
+            row = cursor.fetchone()
+
+        if row is None:
+            return None, False
+
+        created_at = datetime.fromisoformat(str(row[1]))
+        expires_at = datetime.fromisoformat(str(row[2]))
+        payload = CreateSnapshotRequest.model_validate_json(str(row[3]))
+        snapshot = StoredSnapshot(
+            hash=str(row[0]),
+            created_at=created_at,
+            expires_at=expires_at,
+            payload=payload,
+        )
+
+        effective_now = now or datetime.now(timezone.utc)
+        is_expired = snapshot.expires_at <= effective_now
+        return (None, True) if is_expired else (snapshot, False)
