@@ -7,6 +7,9 @@ Shared runtime modules:
 - ETag/cache helpers (`for_us_shared.http_cache`)
 - HTML rendering (`for_us_shared.rendering`)
 
+Runtime target:
+- Python Worker packaging is pinned to Python 3.12 compatibility.
+
 Adapter-specific code in this folder:
 - Cloudflare request/response entrypoint (`src/entry.py`)
 - D1 persistence and abuse-control adapters (`src/for_us_worker`)
