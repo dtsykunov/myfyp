@@ -36,6 +36,11 @@ services:
       dockerfile: cloudflare/worker/Dockerfile
     image: for-us-worker:dev
     command: ./cloudflare/worker/scripts/run-tests.sh
+    volumes:
+      - ./cloudflare/worker/src:/app/cloudflare/worker/src
+      - ./cloudflare/worker/tests:/app/cloudflare/worker/tests
+      - ./cloudflare/worker/scripts:/app/cloudflare/worker/scripts
+      - ./cloudflare/worker/pyproject.toml:/app/cloudflare/worker/pyproject.toml:ro
 
   worker-lint:
     build:
@@ -43,6 +48,11 @@ services:
       dockerfile: cloudflare/worker/Dockerfile
     image: for-us-worker:dev
     command: ./cloudflare/worker/scripts/run-lint.sh
+    volumes:
+      - ./cloudflare/worker/src:/app/cloudflare/worker/src
+      - ./cloudflare/worker/tests:/app/cloudflare/worker/tests
+      - ./cloudflare/worker/scripts:/app/cloudflare/worker/scripts
+      - ./cloudflare/worker/pyproject.toml:/app/cloudflare/worker/pyproject.toml:ro
 
   worker-typecheck:
     build:
@@ -50,3 +60,8 @@ services:
       dockerfile: cloudflare/worker/Dockerfile
     image: for-us-worker:dev
     command: ./cloudflare/worker/scripts/run-typecheck.sh
+    volumes:
+      - ./cloudflare/worker/src:/app/cloudflare/worker/src
+      - ./cloudflare/worker/tests:/app/cloudflare/worker/tests
+      - ./cloudflare/worker/scripts:/app/cloudflare/worker/scripts
+      - ./cloudflare/worker/pyproject.toml:/app/cloudflare/worker/pyproject.toml:ro

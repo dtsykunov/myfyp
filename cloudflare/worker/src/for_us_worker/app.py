@@ -3,9 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 import re
+from typing import cast
 from urllib.parse import urlparse
 
-from pydantic import ValidationError
+from pydantic import ValidationError as PydanticValidationError
+
+try:
+    from pydantic.v1 import ValidationError as PydanticV1ValidationError
+except ImportError:  # pragma: no cover - pydantic v1 runtime
+    PydanticV1ValidationError = PydanticValidationError
 
 from for_us_shared.abuse import AbuseConfig
 from for_us_shared.http_cache import build_cache_headers, build_etag, if_none_match_matches
@@ -23,6 +29,10 @@ from for_us_worker.types import RequestLike, WorkerEnv
 _MAX_BODY_BYTES = 64 * 1024
 _SNAPSHOT_HASH_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 _ABUSE_CONFIG = AbuseConfig()
+_VALIDATION_ERRORS: tuple[type[Exception], ...] = (
+    cast(type[Exception], PydanticValidationError),
+    cast(type[Exception], PydanticV1ValidationError),
+)
 
 
 @dataclass(frozen=True)
@@ -73,8 +83,8 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
             return await _handle_render_snapshot(path.removeprefix("/"), request, env)
 
         return json_response({"detail": "Not found."}, status=404)
-    except ValidationError as exc:
-        return json_response({"detail": exc.errors()}, status=422)
+    except _VALIDATION_ERRORS as exc:
+        return json_response({"detail": _extract_validation_errors(exc)}, status=422)
     except ValueError as exc:
         return json_response({"detail": str(exc)}, status=400)
     except Exception:
@@ -184,3 +194,12 @@ def _client_ip(request: RequestLike) -> str:
         return forwarded_for.split(",")[0].strip()
 
     return "unknown"
+
+
+def _extract_validation_errors(exc: Exception) -> list[object]:
+    errors_getter = getattr(exc, "errors", None)
+    if callable(errors_getter):
+        errors = errors_getter()
+        if isinstance(errors, list):
+            return cast(list[object], errors)
+    return [str(exc)]

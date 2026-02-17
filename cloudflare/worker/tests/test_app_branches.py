@@ -68,7 +68,7 @@ def test_handle_fetch_returns_422_for_validation_error_and_400_for_value_error()
             env,
         )
     )
-    assert invalid_payload.status == 400
+    assert invalid_payload.status == 422
 
     invalid_length = _run(
         handle_fetch(
@@ -87,40 +87,6 @@ def test_handle_fetch_returns_422_for_validation_error_and_400_for_value_error()
     )
     assert invalid_length.status == 400
     assert json.loads(invalid_length.body)["detail"] == "Invalid Content-Length header."
-
-
-def test_handle_fetch_returns_422_when_validation_error_is_raised() -> None:
-    env = FakeEnv()
-
-    class _FakeValidationError(Exception):
-        def errors(self) -> list[dict[str, object]]:
-            return [{"loc": ("videos",), "msg": "bad payload", "type": "value_error"}]
-
-    async def _raise_validation_error(*args: object, **kwargs: object) -> object:
-        del args, kwargs
-        raise _FakeValidationError()
-
-    original_validation_error = app.ValidationError
-    original = app._handle_create_snapshot
-    app.ValidationError = _FakeValidationError
-    app._handle_create_snapshot = _raise_validation_error
-    try:
-        response = _run(
-            handle_fetch(
-                FakeRequest(
-                    method="POST",
-                    url="https://example.com/api/snapshots",
-                    headers={"cf-connecting-ip": "198.51.100.22"},
-                    body=_valid_payload(),
-                ),
-                env,
-            )
-        )
-    finally:
-        app.ValidationError = original_validation_error
-        app._handle_create_snapshot = original
-
-    assert response.status == 422
 
 
 def test_handle_fetch_returns_500_for_unhandled_errors(monkeypatch: pytest.MonkeyPatch) -> None:
