@@ -3,18 +3,19 @@
 This folder contains the MVP browser-side component as a userscript.
 
 Current state:
-- A runnable userscript exists and can parse YouTube homepage cards into video hashes.
-- API integration is intentionally not implemented yet.
+- A runnable userscript parses YouTube homepage cards into `videos` and `shorts`.
+- It uploads snapshots to API endpoint `POST /api/snapshots` and logs API response in console.
+- It does **not** auto-upload on page load. Upload happens only on explicit manual call.
 
 ## Current userscript output
 
 From browser console on YouTube:
 
 ```js
-window.forUsPage.logSnapshot()
+window.forUsPage.uploadLatestSnapshot()
 ```
 
-This returns JSON in the form:
+This uploads payload JSON in the form:
 
 ```json
 {
@@ -24,6 +25,27 @@ This returns JSON in the form:
   "shorts": ["abc123XYZ78", "..."]
 }
 ```
+
+The API response is printed in console, for example:
+
+```json
+{
+  "hash": "Ab12Cd34Ef56",
+  "expiresAt": "2026-02-24T11:00:00Z"
+}
+```
+
+## API URL configuration
+
+Default API URL is `http://127.0.0.1:8000`.
+
+To override it from console:
+
+```js
+window.forUsPage.setApiBaseUrl("http://127.0.0.1:8000")
+```
+
+If `window.forUsPage` is undefined, force-update the userscript in Tampermonkey and reload YouTube.
 
 Planned behavior:
 1. Parse recommendations from `youtube.com`.

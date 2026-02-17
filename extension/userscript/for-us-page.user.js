@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://for-us-page.local
-// @version      0.1.1
+// @version      0.1.4
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @grant        unsafeWindow
+// @connect      *
 // ==/UserScript==
 
 (function () {
@@ -12,6 +14,9 @@
 
   const APP_NAME = "For Us Page";
   const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+  const API_BASE_URL_STORAGE_KEY = "forUsPage.apiBaseUrl";
+  const DEFAULT_API_BASE_URL = "http://127.0.0.1:8000";
+  const pageWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
 
   function extractVideoHashFromHref(href, baseUrl) {
     if (!href) {
@@ -97,24 +102,118 @@
     return snapshot;
   }
 
+  function normalizeApiBaseUrl(url) {
+    return String(url || "").trim().replace(/\/+$/, "");
+  }
+
+  function getApiBaseUrl() {
+    const fromStorage = pageWindow.localStorage.getItem(API_BASE_URL_STORAGE_KEY);
+    return normalizeApiBaseUrl(fromStorage || DEFAULT_API_BASE_URL);
+  }
+
+  function setApiBaseUrl(url) {
+    const normalized = normalizeApiBaseUrl(url);
+    if (!normalized) {
+      throw new Error("API base URL cannot be empty.");
+    }
+    pageWindow.localStorage.setItem(API_BASE_URL_STORAGE_KEY, normalized);
+    return normalized;
+  }
+
+  function postSnapshotWithGmRequest(apiBaseUrl, snapshot) {
+    return new Promise((resolve, reject) => {
+      GM_xmlhttpRequest({
+        method: "POST",
+        url: `${apiBaseUrl}/api/snapshots`,
+        headers: { "Content-Type": "application/json" },
+        data: JSON.stringify(snapshot),
+        onload: (response) => {
+          if (response.status < 200 || response.status >= 300) {
+            reject(
+              new Error(
+                `API request failed: ${response.status} ${response.statusText}`
+              )
+            );
+            return;
+          }
+          try {
+            resolve(JSON.parse(response.responseText));
+          } catch (error) {
+            reject(
+              new Error(
+                `Failed to parse API response: ${
+                  error instanceof Error ? error.message : "Unknown error"
+                }`
+              )
+            );
+          }
+        },
+        onerror: () => reject(new Error("API request failed due to network error.")),
+      });
+    });
+  }
+
+  async function postSnapshotWithFetch(apiBaseUrl, snapshot) {
+    const response = await fetch(`${apiBaseUrl}/api/snapshots`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(snapshot),
+    });
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  async function uploadSnapshot(snapshot, apiBaseUrl = getApiBaseUrl()) {
+    const normalizedBaseUrl = normalizeApiBaseUrl(apiBaseUrl);
+    if (!normalizedBaseUrl) {
+      throw new Error("API base URL is empty.");
+    }
+    if (typeof GM_xmlhttpRequest === "function") {
+      return postSnapshotWithGmRequest(normalizedBaseUrl, snapshot);
+    }
+    return postSnapshotWithFetch(normalizedBaseUrl, snapshot);
+  }
+
+  async function uploadLatestSnapshot() {
+    const snapshot = logSnapshot();
+    if (snapshot.videos.length === 0 && snapshot.shorts.length === 0) {
+      console.warn(`[${APP_NAME}] No recommendations found, skipping upload.`);
+      return null;
+    }
+    const apiBaseUrl = getApiBaseUrl();
+    try {
+      const response = await uploadSnapshot(snapshot, apiBaseUrl);
+      console.info(`[${APP_NAME}] Upload response:`, response);
+      return response;
+    } catch (error) {
+      console.error(
+        `[${APP_NAME}] Failed to upload snapshot to ${apiBaseUrl}:`,
+        error
+      );
+      return null;
+    }
+  }
+
   function registerPublicApi() {
-    window.forUsPage = Object.assign(window.forUsPage || {}, {
+    pageWindow.forUsPage = Object.assign(pageWindow.forUsPage || {}, {
       extractVideoHashFromHref,
       collectVideoHashesFromDocument,
       createRecommendationSnapshot,
       logSnapshot,
+      getApiBaseUrl,
+      setApiBaseUrl,
+      uploadSnapshot,
+      uploadLatestSnapshot,
     });
   }
 
   function bootstrap() {
     registerPublicApi();
     console.info(
-      `[${APP_NAME}] Userscript loaded. Run window.forUsPage.logSnapshot() to capture video hashes.`
+      `[${APP_NAME}] Userscript loaded. Run window.forUsPage.uploadLatestSnapshot() to upload and print API response.`
     );
-
-    if (window.location.pathname === "/") {
-      logSnapshot();
-    }
   }
 
   bootstrap();
