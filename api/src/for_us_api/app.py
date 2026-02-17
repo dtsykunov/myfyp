@@ -478,6 +478,79 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
       </h2>
       {shorts}
     </main>
+    <script>
+      (() => {{
+        const THUMBNAIL_CANDIDATES = {{
+          video: [
+            "maxresdefault.jpg",
+            "sddefault.jpg",
+            "hq720.jpg",
+            "hqdefault.jpg",
+            "mqdefault.jpg"
+          ],
+          short: [
+            "oar2.jpg",
+            "oar1.jpg",
+            "maxresdefault.jpg",
+            "sddefault.jpg",
+            "hq720.jpg",
+            "hqdefault.jpg",
+            "mqdefault.jpg"
+          ]
+        }};
+        const MIN_WIDTH = {{ video: 300, short: 180 }};
+
+        const buildThumbnailUrl = (videoHash, fileName) =>
+          `https://i.ytimg.com/vi/${{encodeURIComponent(videoHash)}}/${{fileName}}`;
+
+        const attachFallback = (image) => {{
+          const videoHash = image.dataset.videoHash || "";
+          if (!videoHash) {{
+            return;
+          }}
+
+          const thumbKind = image.dataset.thumbKind === "short" ? "short" : "video";
+          const candidates = THUMBNAIL_CANDIDATES[thumbKind].map((name) =>
+            buildThumbnailUrl(videoHash, name)
+          );
+          const minWidth = MIN_WIDTH[thumbKind];
+          let candidateIndex = -1;
+
+          const cleanup = () => {{
+            image.removeEventListener("load", onLoad);
+            image.removeEventListener("error", onError);
+          }};
+
+          const tryNext = () => {{
+            candidateIndex += 1;
+            if (candidateIndex >= candidates.length) {{
+              cleanup();
+              return;
+            }}
+            image.src = candidates[candidateIndex];
+          }};
+
+          const onLoad = () => {{
+            if (image.naturalWidth > 0 && image.naturalWidth < minWidth) {{
+              tryNext();
+              return;
+            }}
+            cleanup();
+          }};
+
+          const onError = () => {{
+            tryNext();
+          }};
+
+          image.addEventListener("load", onLoad);
+          image.addEventListener("error", onError);
+          tryNext();
+        }};
+
+        const images = document.querySelectorAll("img.thumb-image[data-video-hash]");
+        images.forEach((image) => attachFallback(image));
+      }})();
+    </script>
   </body>
 </html>
 """
@@ -497,7 +570,7 @@ def _render_video_grid(items: list[RecommendationItem], metadata_reference_time:
             (
                 '<article class="video-card">'
                 f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
-                f'<img src="{thumb}" alt="{escaped_title} thumbnail" loading="lazy">'
+                f'<img class="thumb-image" src="{thumb}" alt="{escaped_title} thumbnail" loading="lazy" decoding="async" data-video-hash="{escaped_hash}" data-thumb-kind="video">'
                 "</a>"
                 '<div class="card-body">'
                 f"{_render_video_card_metadata(item, metadata_reference_time)}"
@@ -522,7 +595,7 @@ def _render_shorts_grid(items: list[RecommendationItem], metadata_reference_time
             (
                 '<article class="short-card">'
                 f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
-                f'<img src="{thumb}" alt="{escaped_title} short thumbnail" loading="lazy">'
+                f'<img class="thumb-image" src="{thumb}" alt="{escaped_title} short thumbnail" loading="lazy" decoding="async" data-video-hash="{escaped_hash}" data-thumb-kind="short">'
                 "</a>"
                 '<div class="card-body">'
                 f'<h3 class="title">{escaped_title}</h3>'
