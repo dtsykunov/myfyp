@@ -109,7 +109,10 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>For You Page - {escaped_hash}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+    <title>For Us Page by dtsykunov - {escaped_hash}</title>
     <style>
       :root {{
         --bg: #0f0f0f;
@@ -159,6 +162,21 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         font-size: 28px;
       }}
 
+      .title-link {{
+        color: #2c9cd3;
+        text-decoration: underline;
+        font-family: "Zen Kaku Gothic New", sans-serif;
+        letter-spacing: .01em;
+        font-weight: 300;
+        font-style: italic;
+        font-optical-sizing: auto;
+        text-rendering: optimizeLegibility;
+      }}
+
+      .title-link:hover {{
+        text-decoration: underline;
+      }}
+
       .meta {{
         margin: 0;
         color: var(--muted);
@@ -170,6 +188,13 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         margin: 0 0 24px;
         display: grid;
         gap: 2px;
+      }}
+
+      .page-description {{
+        margin: 0 0 6px;
+        color: #c6c6c6;
+        font-size: 14px;
+        line-height: 1.45;
       }}
 
       .section-title {{
@@ -381,6 +406,35 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         text-decoration: underline;
       }}
 
+      .faq-footer {{
+        margin-top: 36px;
+        padding-top: 18px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+      }}
+
+      .faq-title {{
+        margin: 0 0 10px;
+        font-size: 18px;
+      }}
+
+      .faq-item {{
+        margin: 0 0 12px;
+      }}
+
+      .faq-question {{
+        margin: 0 0 4px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }}
+
+      .faq-answer {{
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--muted);
+      }}
+
       @media (max-width: 2280px) {{
         .videos-grid {{
           grid-template-columns: repeat(5, 365px);
@@ -459,9 +513,10 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
             <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
           </svg>
         </span>
-        <h1>For You Page</h1>
+        <h1>For Us Page by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
       <div class="meta-stack">
+        <p class="page-description">Snapshot of a personal YouTube recommendations page captured at a specific moment in time.</p>
         <p class="meta">Taken at: <code>{escaped_taken_at}</code></p>
         <p class="meta">Snapshot hash: <code>{escaped_hash}</code></p>
       </div>
@@ -477,6 +532,17 @@ def _render_snapshot_html(snapshot: StoredSnapshot) -> str:
         <span>Shorts</span>
       </h2>
       {shorts}
+      <footer class="faq-footer">
+        <h2 class="faq-title">FAQ</h2>
+        <section class="faq-item">
+          <h3 class="faq-question">1. What is this?</h3>
+          <p class="faq-answer">This is a snapshot of one person's YouTube recommendations page at a specific moment.</p>
+        </section>
+        <section class="faq-item">
+          <h3 class="faq-question">2. Why?</h3>
+          <p class="faq-answer">To quickly share and compare what YouTube was recommending to someone without requiring account access.</p>
+        </section>
+      </footer>
     </main>
     <script>
       (() => {{
