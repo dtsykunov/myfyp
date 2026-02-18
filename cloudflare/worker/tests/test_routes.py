@@ -30,6 +30,8 @@ def test_root_route_renders_installation_page() -> None:
     assert 'myfyp means "my for you page"' in response.body
     assert "share recommendation page" in response.body.lower()
     assert "Install and Use" in response.body
+    assert 'href="/favicon.svg"' in response.body
+    assert '<img src="/favicon.svg" alt="">' in response.body
     assert 'href="/"' in response.body
     assert "https://myfyp.link/myfyp.user.js" in response.body
     assert 'href="/privacy"' in response.body
@@ -39,6 +41,8 @@ def test_privacy_route_renders_privacy_page() -> None:
     response = _run(handle_fetch(FakeRequest(method="GET", url="https://example.com/privacy"), FakeEnv()))
     assert response.status == 200
     assert "Privacy Notice" in response.body
+    assert 'href="/favicon.svg"' in response.body
+    assert '<img src="/favicon.svg" alt="">' in response.body
     assert 'href="/"' in response.body
     assert "Snapshots are automatically deleted after 7 days." in response.body
     assert 'href="/privacy"' in response.body
@@ -54,6 +58,24 @@ def test_userscript_route_redirects_to_canonical_script() -> None:
     assert response.status == 302
     assert response.headers["location"].endswith("/extension/userscript/myfyp.user.js")
     assert response.headers["cache-control"] == "no-cache"
+
+
+def test_icon_routes_redirect_to_canonical_brand_assets() -> None:
+    icon_paths = [
+        "/favicon.ico",
+        "/favicon.svg",
+        "/favicon-16x16.png",
+        "/favicon-32x32.png",
+        "/favicon-48x48.png",
+        "/apple-touch-icon.png",
+        "/android-chrome-192x192.png",
+        "/android-chrome-512x512.png",
+    ]
+    for icon_path in icon_paths:
+        response = _run(handle_fetch(FakeRequest(method="GET", url=f"https://example.com{icon_path}"), FakeEnv()))
+        assert response.status == 302
+        assert response.headers["location"].endswith(f"/brand/icons/web{icon_path}")
+        assert response.headers["cache-control"] == "public, max-age=86400, immutable"
 
 
 def test_create_and_get_snapshot_routes() -> None:
@@ -160,6 +182,8 @@ def test_render_hash_route() -> None:
     )
     assert page_response.status == 200
     assert "myfyp by" in page_response.body
+    assert 'href="/favicon.svg"' in page_response.body
+    assert '<img src="/favicon.svg" alt="">' in page_response.body
     assert 'content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"' in page_response.body
 
 

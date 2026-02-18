@@ -23,8 +23,19 @@ from for_us_api.rendering import (
 )
 from for_us_api.store import DeleteSnapshotResult, SnapshotStore
 from for_us_api.userscript import load_userscript_text as _load_userscript_text
+from for_us_api.web_icons import load_web_icon_bytes as _load_web_icon_bytes
 
 DEFAULT_HTML_CACHE_ENTRIES = 2000
+_WEB_ICON_MEDIA_TYPES: dict[str, str] = {
+    "favicon.ico": "image/x-icon",
+    "favicon.svg": "image/svg+xml",
+    "favicon-16x16.png": "image/png",
+    "favicon-32x32.png": "image/png",
+    "favicon-48x48.png": "image/png",
+    "apple-touch-icon.png": "image/png",
+    "android-chrome-192x192.png": "image/png",
+    "android-chrome-512x512.png": "image/png",
+}
 
 
 class _SnapshotHtmlCache:
@@ -123,6 +134,38 @@ def create_app(
             media_type="text/javascript",
             headers={"Cache-Control": "no-cache"},
         )
+
+    @app.get("/favicon.ico")
+    def get_favicon_ico() -> Response:  # pyright: ignore[reportUnusedFunction]
+        return _serve_web_icon("favicon.ico")
+
+    @app.get("/favicon.svg")
+    def get_favicon_svg() -> Response:  # pyright: ignore[reportUnusedFunction]
+        return _serve_web_icon("favicon.svg")
+
+    @app.get("/favicon-16x16.png")
+    def get_favicon_16() -> Response:  # pyright: ignore[reportUnusedFunction]
+        return _serve_web_icon("favicon-16x16.png")
+
+    @app.get("/favicon-32x32.png")
+    def get_favicon_32() -> Response:  # pyright: ignore[reportUnusedFunction]
+        return _serve_web_icon("favicon-32x32.png")
+
+    @app.get("/favicon-48x48.png")
+    def get_favicon_48() -> Response:  # pyright: ignore[reportUnusedFunction]
+        return _serve_web_icon("favicon-48x48.png")
+
+    @app.get("/apple-touch-icon.png")
+    def get_apple_touch_icon() -> Response:  # pyright: ignore[reportUnusedFunction]
+        return _serve_web_icon("apple-touch-icon.png")
+
+    @app.get("/android-chrome-192x192.png")
+    def get_android_icon_192() -> Response:  # pyright: ignore[reportUnusedFunction]
+        return _serve_web_icon("android-chrome-192x192.png")
+
+    @app.get("/android-chrome-512x512.png")
+    def get_android_icon_512() -> Response:  # pyright: ignore[reportUnusedFunction]
+        return _serve_web_icon("android-chrome-512x512.png")
 
     @app.get("/", response_class=HTMLResponse)
     def render_home_page(request: Request) -> HTMLResponse:  # pyright: ignore[reportUnusedFunction]
@@ -224,3 +267,16 @@ def _client_ip(request: Request) -> str:
     if request.client is not None:
         return request.client.host
     return "unknown"
+
+
+def _serve_web_icon(file_name: str) -> Response:
+    media_type = _WEB_ICON_MEDIA_TYPES[file_name]
+    try:
+        icon_bytes = _load_web_icon_bytes(file_name)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return Response(
+        content=icon_bytes,
+        media_type=media_type,
+        headers={"Cache-Control": "public, max-age=86400, immutable"},
+    )

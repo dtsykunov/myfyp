@@ -1,0 +1,6 @@
+extension/chrome/icons/*.png filter=lfs diff=lfs merge=lfs -text
+extension/firefox/icons/*.png filter=lfs diff=lfs merge=lfs -text
+brand/icons/web/*.png filter=lfs diff=lfs merge=lfs -text
+brand/icons/web/*.ico filter=lfs diff=lfs merge=lfs -text
+brand/icons/web/*.svg filter=lfs diff=lfs merge=lfs -text
+brand/logo-mark.svg filter=lfs diff=lfs merge=lfs -text

@@ -68,6 +68,14 @@ def render_home_html(userscript_url: str) -> str:
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <meta name="theme-color" content="#0f0f0f">
     <meta name="application-name" content="myfyp">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
     <link rel="canonical" href="{escaped_home_url}">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="en_US">
@@ -142,7 +150,7 @@ def render_home_html(userscript_url: str) -> str:
         display: inline-flex;
       }}
 
-      .brand-logo svg {{
+      .brand-logo img {{
         width: 29px;
         height: 20px;
         display: block;
@@ -368,10 +376,7 @@ def render_home_html(userscript_url: str) -> str:
       <header class="top-header">
         <a class="brand-logo-link" href="/" aria-label="Open homepage">
           <span class="brand-logo" aria-hidden="true">
-          <svg xmlns="http://www.w3.org/2000/svg" width="29" height="20" viewBox="0 0 29 20" focusable="false" aria-hidden="true">
-            <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
-            <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
-          </svg>
+            <img src="/favicon.svg" alt="">
           </span>
         </a>
         <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
@@ -441,6 +446,14 @@ def render_privacy_html() -> str:
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
@@ -484,7 +497,7 @@ def render_privacy_html() -> str:
         flex-shrink: 0;
       }
 
-      .brand-logo svg {
+      .brand-logo img {
         width: 29px;
         height: 20px;
         display: block;
@@ -563,10 +576,7 @@ def render_privacy_html() -> str:
       <header class="top-header">
         <a class="brand-logo-link" href="/" aria-label="Open homepage">
           <span class="brand-logo" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="29" height="20" viewBox="0 0 29 20" focusable="false" aria-hidden="true">
-              <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
-              <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
-            </svg>
+            <img src="/favicon.svg" alt="">
           </span>
         </a>
         <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
@@ -624,6 +634,14 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     <meta name="description" content="{escaped_snapshot_seo_description}">
     <meta name="robots" content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <meta name="theme-color" content="#0f0f0f">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
@@ -670,7 +688,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
         display: inline-flex;
       }}
 
-      .brand-logo svg {{
+      .brand-logo img {{
         width: 29px;
         height: 20px;
         display: block;
@@ -1040,10 +1058,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
       <header class="top-header">
         <a class="brand-logo-link" href="/" aria-label="Open homepage">
           <span class="brand-logo" aria-hidden="true">
-          <svg xmlns="http://www.w3.org/2000/svg" width="29" height="20" viewBox="0 0 29 20" focusable="false" aria-hidden="true">
-            <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
-            <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
-          </svg>
+            <img src="/favicon.svg" alt="">
           </span>
         </a>
         <h1>myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>

@@ -136,10 +136,16 @@ Console API:
 - `extension/userscript/myfyp.user.js` - Tampermonkey userscript.
 - `api/` - FastAPI + SQLite implementation.
 - `cloudflare/worker/` - Python Worker + D1 adapter.
+- `brand/logo-mark.svg` - master square logo source.
+- `brand/icons/web/` - website favicon assets (`png`, `svg`, `ico`).
+- `extension/chrome/icons/` - Chrome extension icons.
+- `extension/firefox/icons/` - Firefox extension icons.
 - `docker-compose.yml` - containerized lint/typecheck/test/run.
 - `flake.nix` - local reproducible dev shell.
 - `.github/workflows/ci.yml` - Docker-based quality checks.
 - `.github/workflows/deploy-worker.yml` - Worker deploy + D1 migrations.
+
+Image binaries are tracked with Git LFS.
 
 ## Development Commands
 

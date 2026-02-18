@@ -44,7 +44,7 @@ zip_path="${out_dir}/myfyp-firefox-v${version}.zip"
 
 (
   cd "${firefox_dir}"
-  zip -qr "${zip_path}" manifest.json background content popup
+  zip -qr "${zip_path}" manifest.json background content popup icons
 )
 
 sha_path="${zip_path}.sha256"

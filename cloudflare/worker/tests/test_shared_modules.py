@@ -215,12 +215,16 @@ def test_shared_rendering_helper_branches() -> None:
     rendered = rendering.render_snapshot_html(snapshot)
     assert "myfyp by" in rendered
     assert 'content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"' in rendered
+    assert 'href="/favicon.svg"' in rendered
+    assert '<img src="/favicon.svg" alt="">' in rendered
     assert 'href="/"' in rendered
     assert "Taken at: <code>2026-02-17 11:00:00 UTC</code>" in rendered
     assert 'href="/privacy"' in rendered
 
     privacy_rendered = rendering.render_privacy_html()
     assert "Privacy Notice" in privacy_rendered
+    assert 'href="/favicon.svg"' in privacy_rendered
+    assert '<img src="/favicon.svg" alt="">' in privacy_rendered
     assert 'href="/"' in privacy_rendered
     assert 'href="/privacy"' in privacy_rendered
 
@@ -228,5 +232,7 @@ def test_shared_rendering_helper_branches() -> None:
     assert 'myfyp means "my for you page"' in home_rendered
     assert "share recommendation page" in home_rendered.lower()
     assert "Install and Use" in home_rendered
+    assert 'href="/favicon.svg"' in home_rendered
+    assert '<img src="/favicon.svg" alt="">' in home_rendered
     assert 'href="/"' in home_rendered
     assert 'href="/privacy"' in home_rendered

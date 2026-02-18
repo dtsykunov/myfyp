@@ -40,6 +40,20 @@ _USERSCRIPT_REDIRECT_URL = (
     "https://raw.githubusercontent.com/"
     "dtsykunov/myfyp/master/extension/userscript/myfyp.user.js"
 )
+_ICON_REDIRECT_BASE_URL = (
+    "https://raw.githubusercontent.com/"
+    "dtsykunov/myfyp/master/brand/icons/web"
+)
+_ICON_FILE_NAMES = {
+    "favicon.ico",
+    "favicon.svg",
+    "favicon-16x16.png",
+    "favicon-32x32.png",
+    "favicon-48x48.png",
+    "apple-touch-icon.png",
+    "android-chrome-192x192.png",
+    "android-chrome-512x512.png",
+}
 _VALIDATION_ERRORS: tuple[type[Exception], ...] = (
     cast(type[Exception], PydanticValidationError),
     cast(type[Exception], PydanticV1ValidationError),
@@ -96,6 +110,18 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
                     "cache-control": "no-cache",
                 },
             )
+
+        if request.method == "GET" and path.startswith("/"):
+            file_name = path.removeprefix("/")
+            if file_name in _ICON_FILE_NAMES:
+                return ResponseSpec(
+                    status=302,
+                    body="",
+                    headers={
+                        "location": f"{_ICON_REDIRECT_BASE_URL}/{file_name}",
+                        "cache-control": "public, max-age=86400, immutable",
+                    },
+                )
 
         if request.method == "POST" and path == "/api/snapshots":
             return await _handle_create_snapshot(request, env)

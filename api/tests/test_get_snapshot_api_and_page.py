@@ -107,6 +107,8 @@ def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> 
     assert "81K views" in page_response.text
     assert "3 days ago" in page_response.text
     assert 'content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"' in page_response.text
+    assert 'href="/favicon.svg"' in page_response.text
+    assert '<img src="/favicon.svg" alt="">' in page_response.text
     assert 'href="/"' in page_response.text
     assert 'href="/privacy"' in page_response.text
     assert page_response.headers["etag"].startswith('"html-')
@@ -202,6 +204,8 @@ def test_root_page_includes_installation_instructions(tmp_path: Path) -> None:
     assert 'myfyp means "my for you page"' in response.text
     assert "share recommendation page" in response.text.lower()
     assert "Install and Use" in response.text
+    assert 'href="/favicon.svg"' in response.text
+    assert '<img src="/favicon.svg" alt="">' in response.text
     assert 'href="/"' in response.text
     assert 'href="http://testserver/myfyp.user.js"' in response.text
     assert 'href="/privacy"' in response.text
@@ -230,9 +234,33 @@ def test_privacy_page_is_available(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert "Privacy Notice" in response.text
+    assert 'href="/favicon.svg"' in response.text
+    assert '<img src="/favicon.svg" alt="">' in response.text
     assert 'href="/"' in response.text
     assert "Snapshots are automatically deleted after 7 days." in response.text
     assert 'href="/privacy"' in response.text
+
+
+def test_web_icon_routes_serve_committed_assets(tmp_path: Path) -> None:
+    database_path = tmp_path / "snapshots.db"
+    icon_paths = [
+        ("/favicon.ico", "image/x-icon"),
+        ("/favicon.svg", "image/svg+xml"),
+        ("/favicon-16x16.png", "image/png"),
+        ("/favicon-32x32.png", "image/png"),
+        ("/favicon-48x48.png", "image/png"),
+        ("/apple-touch-icon.png", "image/png"),
+        ("/android-chrome-192x192.png", "image/png"),
+        ("/android-chrome-512x512.png", "image/png"),
+    ]
+
+    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
+        for icon_path, expected_media_type in icon_paths:
+            response = client.get(icon_path)
+            assert response.status_code == 200
+            assert response.headers["content-type"].startswith(expected_media_type)
+            assert response.headers["cache-control"] == "public, max-age=86400, immutable"
+            assert response.content
 
 
 def test_expired_snapshot_is_cleaned_up_and_returns_404(tmp_path: Path) -> None:
