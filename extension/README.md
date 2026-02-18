@@ -5,7 +5,6 @@ This directory contains browser-side upload clients for myfyp:
 - `userscript/`: Tampermonkey/Greasemonkey userscript (`myfyp.user.js`)
 - `chrome/`: Chrome Manifest V3 extension
 - `firefox/`: Firefox WebExtension
-- `safari/`: Safari Web Extension package
 
 All clients share the same behavior:
 
@@ -31,7 +30,6 @@ window.myfyp.setApiBaseUrl("https://myfyp.link")
 ```bash
 ./extension/chrome/scripts/build.sh
 ./extension/firefox/scripts/build.sh
-./extension/safari/scripts/build.sh
 ```
 
 Packages are written to `dist/extensions/<browser>/`.
