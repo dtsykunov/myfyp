@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://myfyp.link
-// @version      0.1.14
+// @version      0.1.15
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
@@ -37,6 +37,8 @@
   };
   const API_BASE_URL_STORAGE_KEY = "forUsPage.apiBaseUrl";
   const API_BASE_URL_MIGRATION_KEY = "forUsPage.apiBaseUrlMigratedFromLocalhost";
+  const LINK_HISTORY_STORAGE_KEY = "forUsPage.linkHistory";
+  const LINK_HISTORY_MAX_ITEMS = 500;
   const DEBUG_STORAGE_KEY = "forUsPage.debug";
   const DEFAULT_API_BASE_URL = "https://myfyp.link";
   const TOAST_ID = "for-us-page-toast";
@@ -62,6 +64,15 @@
 
   function isDebugEnabled() {
     return pageWindow.localStorage.getItem(DEBUG_STORAGE_KEY) === "1";
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function extractVideoHashFromHref(href, baseUrl) {
@@ -569,6 +580,172 @@
     return normalizeApiBaseUrl(fromStorage || DEFAULT_API_BASE_URL);
   }
 
+  function getLinkHistory() {
+    const rawValue = pageWindow.localStorage.getItem(LINK_HISTORY_STORAGE_KEY);
+    if (!rawValue) {
+      return [];
+    }
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed
+        .filter((entry) => entry && typeof entry === "object")
+        .map((entry) => ({
+          createdAt: normalizeText(entry.createdAt || ""),
+          shareUrl: normalizeText(entry.shareUrl || ""),
+          removeUrl: normalizeText(entry.removeUrl || ""),
+          hash: normalizeText(entry.hash || ""),
+        }))
+        .filter((entry) => entry.shareUrl || entry.removeUrl);
+    } catch {
+      return [];
+    }
+  }
+
+  function setLinkHistory(entries) {
+    pageWindow.localStorage.setItem(
+      LINK_HISTORY_STORAGE_KEY,
+      JSON.stringify(entries.slice(0, LINK_HISTORY_MAX_ITEMS))
+    );
+  }
+
+  function appendLinkHistoryEntry(entry) {
+    const shareUrl = normalizeText(entry && entry.shareUrl);
+    const removeUrl = normalizeText(entry && entry.removeUrl);
+    if (!shareUrl && !removeUrl) {
+      return;
+    }
+    const hash = normalizeText(entry && entry.hash);
+    const createdAt = normalizeText(entry && entry.createdAt) || new Date().toISOString();
+    const history = getLinkHistory();
+    const deduplicatedHistory = history.filter(
+      (existing) =>
+        !(existing.shareUrl === shareUrl && existing.removeUrl === removeUrl)
+    );
+    deduplicatedHistory.unshift({ createdAt, shareUrl, removeUrl, hash });
+    setLinkHistory(deduplicatedHistory);
+  }
+
+  function renderLinkHistoryHtml(entries) {
+    const rows = entries
+      .map((entry, index) => {
+        const createdAt = entry.createdAt
+          ? new Date(entry.createdAt).toLocaleString()
+          : "Unknown time";
+        const hashLine = entry.hash ? `<div class="hash">Hash: <code>${escapeHtml(entry.hash)}</code></div>` : "";
+        const shareLine = entry.shareUrl
+          ? `<div><span class="label">Share:</span> <a href="${escapeHtml(entry.shareUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(entry.shareUrl)}</a></div>`
+          : "";
+        const removeLine = entry.removeUrl
+          ? `<div><span class="label">Remove:</span> <a href="${escapeHtml(entry.removeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(entry.removeUrl)}</a></div>`
+          : "";
+        return `
+          <li class="item">
+            <div class="title">#${index + 1} • ${escapeHtml(createdAt)}</div>
+            ${hashLine}
+            ${shareLine}
+            ${removeLine}
+          </li>
+        `;
+      })
+      .join("");
+
+    return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${APP_NAME} link history</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0f0f0f;
+        color: #f1f1f1;
+      }
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 24px;
+      }
+      p {
+        color: #bbbbbb;
+        margin: 0 0 18px;
+      }
+      ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 10px;
+      }
+      .item {
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 10px;
+        padding: 12px;
+        background: #1a1a1a;
+      }
+      .title {
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .hash {
+        margin-bottom: 6px;
+        color: #b6b6b6;
+      }
+      .label {
+        color: #b6b6b6;
+      }
+      a {
+        color: #8ab4ff;
+        word-break: break-all;
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>${APP_NAME} link history</h1>
+      <p>Total snapshots: ${entries.length}</p>
+      <ul>${rows}</ul>
+    </main>
+  </body>
+</html>`;
+  }
+
+  function showLinkHistory() {
+    const history = getLinkHistory();
+    if (history.length === 0) {
+      showToast({
+        title: `${APP_NAME}`,
+        message: "No uploaded snapshot links found yet.",
+        variant: "error",
+      });
+      return;
+    }
+    const historyWindow = pageWindow.open("", "_blank");
+    if (!historyWindow) {
+      console.info(`[${APP_NAME}] Link history:`, history);
+      showToast({
+        title: `${APP_NAME}`,
+        message: "Popup blocked. Opened link history in browser console.",
+        variant: "error",
+      });
+      return;
+    }
+    historyWindow.document.open();
+    historyWindow.document.write(renderLinkHistoryHtml(history));
+    historyWindow.document.close();
+  }
+
   function removeToast() {
     const existing = document.getElementById(TOAST_ID);
     if (existing) {
@@ -812,6 +989,12 @@
       const response = await uploadSnapshot(snapshot, apiBaseUrl);
       const snapshotUrl = buildSnapshotUrl(apiBaseUrl, response);
       const removeUrl = buildRemoveUrl(apiBaseUrl, response);
+      appendLinkHistoryEntry({
+        createdAt: new Date().toISOString(),
+        hash: response && typeof response.hash === "string" ? response.hash : "",
+        shareUrl: snapshotUrl,
+        removeUrl,
+      });
       console.info(`[${APP_NAME}] Upload response:`, response);
       showToast({
         title: `${APP_NAME} upload complete`,
@@ -849,6 +1032,8 @@
       setApiBaseUrl,
       uploadSnapshot,
       uploadLatestSnapshot,
+      getLinkHistory,
+      showLinkHistory,
     });
   }
 
@@ -858,6 +1043,9 @@
     }
     GM_registerMenuCommand("For Us Page: Upload Snapshot", () => {
       void uploadLatestSnapshot();
+    });
+    GM_registerMenuCommand("For Us Page: Show Link History", () => {
+      showLinkHistory();
     });
   }
 
