@@ -34,3 +34,14 @@ WEB_EXT_API_KEY=... \
 WEB_EXT_API_SECRET=... \
 ./extension/firefox/scripts/deploy.sh
 ```
+
+## GitHub Actions Deployment
+
+Workflow: `.github/workflows/deploy-extension-firefox.yml`
+
+Required repository secrets:
+- `FIREFOX_AMO_API_KEY` - AMO JWT issuer/API key.
+- `FIREFOX_AMO_API_SECRET` - AMO JWT secret.
+
+Workflow input:
+- `amo_channel` - `unlisted` (default) or `listed`.

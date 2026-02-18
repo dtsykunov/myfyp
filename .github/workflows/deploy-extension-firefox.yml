@@ -1,0 +1,50 @@
+name: Deploy Firefox Extension
+
+on:
+  workflow_dispatch:
+    inputs:
+      amo_channel:
+        description: "AMO signing channel"
+        type: choice
+        options:
+          - unlisted
+          - listed
+        default: unlisted
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-firefox-extension
+  cancel-in-progress: false
+
+jobs:
+  deploy-firefox-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Build Firefox extension package
+        run: ./extension/firefox/scripts/build.sh
+
+      - name: Publish Firefox extension to AMO
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.FIREFOX_AMO_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.FIREFOX_AMO_API_SECRET }}
+          FIREFOX_AMO_CHANNEL: ${{ inputs.amo_channel }}
+        run: ./extension/firefox/scripts/deploy.sh
+
+      - name: Upload Firefox extension artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: myfyp-firefox-extension
+          path: |
+            dist/extensions/firefox/*.zip
+            dist/extensions/firefox/*.sha256
+            dist/extensions/firefox/signed/*

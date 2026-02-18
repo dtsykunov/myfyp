@@ -144,6 +144,7 @@ Console API:
 - `flake.nix` - local reproducible dev shell.
 - `.github/workflows/ci.yml` - Docker-based quality checks.
 - `.github/workflows/deploy-worker.yml` - Worker deploy + D1 migrations.
+- `.github/workflows/deploy-extension-firefox.yml` - Firefox AMO publish workflow.
 
 Image binaries are tracked with Git LFS.
 
@@ -180,3 +181,14 @@ docker compose up api
 
 Required GitHub environment configuration is documented in:
 `cloudflare/worker/README.md`
+
+## Firefox Extension Deployment
+
+`Deploy Firefox Extension` workflow:
+- builds Firefox extension package
+- submits/signs via AMO (`web-ext sign`)
+- uploads built and signed artifacts as workflow artifacts
+
+Required GitHub repository secrets:
+- `FIREFOX_AMO_API_KEY`
+- `FIREFOX_AMO_API_SECRET`
