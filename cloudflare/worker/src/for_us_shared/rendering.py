@@ -422,12 +422,9 @@ def render_privacy_html() -> str:
     <style>
       :root {
         --bg: #0f0f0f;
-        --bg-soft: #181818;
-        --card: #1b1b1b;
         --text: #f1f1f1;
         --muted: #aaaaaa;
         --line: rgba(255, 255, 255, 0.12);
-        --line-soft: rgba(255, 255, 255, 0.08);
         --accent: #8ab4ff;
       }
 
@@ -440,25 +437,12 @@ def render_privacy_html() -> str:
         background: var(--bg);
         color: var(--text);
         font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-        min-height: 100vh;
-      }
-
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background:
-          radial-gradient(1200px 420px at 16% -12%, rgba(138, 180, 255, 0.16), transparent 60%),
-          radial-gradient(900px 360px at 88% -18%, rgba(44, 156, 211, 0.14), transparent 60%);
       }
 
       main {
-        max-width: 980px;
+        max-width: 860px;
         margin: 0 auto;
         padding: 28px 20px 24px;
-        position: relative;
-        z-index: 1;
       }
 
       .top-header {
@@ -501,94 +485,43 @@ def render_privacy_html() -> str:
         text-rendering: optimizeLegibility;
       }
 
-      .panel {
+      .notice {
         border: 1px solid var(--line);
         border-radius: 16px;
-        background: linear-gradient(180deg, #1b1b1b 0%, #171717 100%);
-        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
-      }
-
-      .intro {
+        background: #171717;
         padding: 22px;
-        margin-bottom: 14px;
       }
 
-      .eyebrow {
-        margin: 0 0 8px;
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-
-      .section-title {
-        margin: 0;
-        font-size: clamp(22px, 3vw, 30px);
+      h2 {
+        margin: 0 0 14px;
+        font-size: clamp(24px, 3vw, 30px);
         line-height: 1.25;
       }
 
-      .intro p {
-        margin: 12px 0 0;
+      p {
+        margin: 0 0 14px;
+        line-height: 1.65;
         color: #d0d0d0;
-        line-height: 1.55;
-        max-width: 760px;
       }
 
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+      p:last-child {
+        margin-bottom: 0;
       }
 
-      .card {
-        padding: 18px;
-      }
-
-      .card h2 {
-        margin: 0 0 8px;
-        font-size: 19px;
-        line-height: 1.35;
-      }
-
-      p, li {
-        color: #d0d0d0;
-        line-height: 1.55;
-      }
-
-      ul {
-        margin: 0;
-        padding-left: 20px;
-      }
-
-      li {
-        margin-bottom: 8px;
+      .contact-link,
+      .privacy-link {
+        color: var(--accent);
       }
 
       .muted {
         margin-top: 12px;
-        color: #9f9f9f;
+        color: var(--muted);
         font-size: 13px;
       }
 
       .privacy-footer {
         margin-top: 18px;
         text-align: center;
-      }
-
-      .privacy-link {
-        color: var(--accent);
-        font-size: 13px;
-        text-decoration: none;
-      }
-
-      .privacy-link:hover {
-        text-decoration: underline;
-      }
-
-      @media (max-width: 860px) {
-        .grid {
-          grid-template-columns: 1fr;
-        }
       }
     </style>
   </head>
@@ -606,42 +539,14 @@ def render_privacy_html() -> str:
         <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
 
-      <section class="panel intro">
-        <p class="eyebrow">Privacy Notice</p>
-        <h2 class="section-title">Minimal data, temporary storage, explicit control.</h2>
-        <p>
-          myfyp stores only the recommendation snapshot submitted by the userscript so a share page can be rendered.
-          The snapshot is temporary and can be removed at any time with the private remove link.
-        </p>
-      </section>
-
-      <section class="grid">
-        <article class="panel card">
-          <h2>What Data Is Stored</h2>
-          <ul>
-            <li>Video and Shorts identifiers and parsed metadata submitted by the userscript.</li>
-            <li>Snapshot creation timestamp and optional source page URL.</li>
-            <li>Technical request metadata needed for abuse prevention and availability.</li>
-          </ul>
-        </article>
-        <article class="panel card">
-          <h2>Retention and Deletion</h2>
-          <p>Snapshots are automatically deleted after 7 days.</p>
-          <p>Each created snapshot includes a private remove link that can immediately delete it.</p>
-        </article>
-        <article class="panel card">
-          <h2>Purpose and Scope</h2>
-          <p>
-            Data is processed only to store and render shared snapshot pages.
-            It is not used for advertising, profiling, or resale.
-          </p>
-        </article>
-        <article class="panel card">
-          <h2>Operational Controls</h2>
-          <p>
-            The service enforces request-size limits, rate limits, and quotas to reduce abuse and preserve reliability.
-          </p>
-        </article>
+      <section class="notice">
+        <h2>Privacy Notice</h2>
+        <p>myfyp stores only the minimum snapshot data required to render a shared personal YouTube recommendation page.</p>
+        <p>The stored data can include recommendation identifiers, parsed metadata, snapshot creation time, and basic technical request metadata needed for service reliability and abuse prevention.</p>
+        <p>Snapshots are automatically deleted after 7 days.</p>
+        <p>Each created snapshot includes a private remove link that can delete the snapshot immediately.</p>
+        <p>Data is used only to store and render shared snapshot pages. It is not sold and is not used for advertising.</p>
+        <p>Contact: <a class="contact-link" href="mailto:le7edea36@mozmail.com">le7edea36@mozmail.com</a></p>
       </section>
 
       <p class="muted">Last updated: February 18, 2026</p>
