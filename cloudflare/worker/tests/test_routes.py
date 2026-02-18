@@ -27,6 +27,8 @@ def test_root_route_renders_installation_page() -> None:
     response = _run(handle_fetch(FakeRequest(method="GET", url="https://example.com/"), FakeEnv()))
     assert response.status == 200
     assert "myfyp by" in response.body
+    assert 'myfyp means "my for you page"' in response.body
+    assert "share recommendation page" in response.body.lower()
     assert "Install and Use" in response.body
     assert 'href="/"' in response.body
     assert "https://myfyp.link/myfyp.user.js" in response.body
@@ -158,6 +160,7 @@ def test_render_hash_route() -> None:
     )
     assert page_response.status == 200
     assert "myfyp by" in page_response.body
+    assert 'content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"' in page_response.body
 
 
 def test_create_rate_limit() -> None:

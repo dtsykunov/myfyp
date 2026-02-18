@@ -106,6 +106,7 @@ def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> 
     assert "https://yt3.ggpht.com/avatar" in page_response.text
     assert "81K views" in page_response.text
     assert "3 days ago" in page_response.text
+    assert 'content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"' in page_response.text
     assert 'href="/"' in page_response.text
     assert 'href="/privacy"' in page_response.text
     assert page_response.headers["etag"].startswith('"html-')
@@ -198,6 +199,8 @@ def test_root_page_includes_installation_instructions(tmp_path: Path) -> None:
 
     assert response.status_code == 200
     assert "myfyp by" in response.text
+    assert 'myfyp means "my for you page"' in response.text
+    assert "share recommendation page" in response.text.lower()
     assert "Install and Use" in response.text
     assert 'href="/"' in response.text
     assert 'href="http://testserver/myfyp.user.js"' in response.text

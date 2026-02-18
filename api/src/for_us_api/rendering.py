@@ -21,17 +21,31 @@ def render_home_html(userscript_url: str) -> str:
     if parsed_userscript_url.scheme and parsed_userscript_url.netloc:
         home_url = urlunsplit((parsed_userscript_url.scheme, parsed_userscript_url.netloc, "/", "", ""))
     schema_home_url = home_url if home_url.startswith("http") else "https://myfyp.link/"
+    seo_title = "myfyp (my for you page) | Share recommendation pages"
     seo_description = (
-        "myfyp lets you capture and share a personal YouTube recommendation page snapshot "
-        "with a temporary link."
+        "myfyp means my for you page. Capture and share a personal YouTube recommendation "
+        "page snapshot with a temporary link."
+    )
+    seo_keywords = ", ".join(
+        [
+            "share recommendations",
+            "share recommendation page",
+            "share for you page",
+            "share my for you page",
+            "myfyp",
+            "my for you page",
+            "youtube recommendation snapshot",
+        ]
     )
     structured_data = json.dumps(
         {
             "@context": "https://schema.org",
             "@type": "WebSite",
             "name": "myfyp",
+            "alternateName": "my for you page",
             "url": schema_home_url,
             "description": seo_description,
+            "keywords": seo_keywords,
             "creator": {
                 "@type": "Person",
                 "name": "dtsykunov",
@@ -41,29 +55,33 @@ def render_home_html(userscript_url: str) -> str:
         separators=(",", ":"),
     )
     escaped_home_url = html.escape(home_url)
+    escaped_seo_title = html.escape(seo_title)
     escaped_seo_description = html.escape(seo_description)
+    escaped_seo_keywords = html.escape(seo_keywords)
     return f"""<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="{escaped_seo_keywords}">
     <meta name="description" content="{escaped_seo_description}">
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <meta name="theme-color" content="#0f0f0f">
     <meta name="application-name" content="myfyp">
     <link rel="canonical" href="{escaped_home_url}">
     <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_US">
     <meta property="og:site_name" content="myfyp">
-    <meta property="og:title" content="myfyp by dtsykunov">
+    <meta property="og:title" content="{escaped_seo_title}">
     <meta property="og:description" content="{escaped_seo_description}">
     <meta property="og:url" content="{escaped_home_url}">
     <meta name="twitter:card" content="summary">
-    <meta name="twitter:title" content="myfyp by dtsykunov">
+    <meta name="twitter:title" content="{escaped_seo_title}">
     <meta name="twitter:description" content="{escaped_seo_description}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
-    <title>myfyp by dtsykunov | Personal YouTube recommendation snapshots</title>
+    <title>{escaped_seo_title}</title>
     <script type="application/ld+json">{structured_data}</script>
     <style>
       :root {{
@@ -178,6 +196,12 @@ def render_home_html(userscript_url: str) -> str:
         color: #d0d0d0;
         line-height: 1.55;
         max-width: 760px;
+      }}
+
+      .hero-disambiguation {{
+        margin: 12px 0 0;
+        color: #d9e9ff;
+        line-height: 1.5;
       }}
 
       .hero-actions {{
@@ -354,9 +378,11 @@ def render_home_html(userscript_url: str) -> str:
       </header>
 
       <section class="card hero">
-        <p class="eyebrow">Personal YouTube recommendation snapshots</p>
-        <h2 class="hero-title">Capture your current home feed and share it with a temporary link.</h2>
+        <p class="eyebrow">Share recommendations from your personal YouTube Home feed</p>
+        <h2 class="hero-title">Share your recommendation page with a temporary link.</h2>
+        <p class="hero-disambiguation"><strong>myfyp means "my for you page".</strong></p>
         <p class="hero-description">
+          Use myfyp to share recommendations from your personal YouTube home feed.
           myfyp stores only the parsed recommendation snapshot needed to render a share page.
           Each snapshot has a 7-day lifetime and includes a private remove link for immediate deletion.
         </p>
@@ -394,7 +420,7 @@ def render_home_html(userscript_url: str) -> str:
       <section class="card faq">
         <h2 class="faq-title">FAQ</h2>
         <ol class="faq-list">
-          <li><strong>What is myfyp?</strong> It is a tool to share a temporary snapshot of one person's YouTube homepage recommendations.</li>
+          <li><strong>What is myfyp?</strong> myfyp means <em>my for you page</em>. It helps you share a temporary snapshot of one person's YouTube homepage recommendations.</li>
           <li><strong>How long is data stored?</strong> Snapshots automatically expire after 7 days, and each upload includes a remove link for immediate deletion.</li>
           <li><strong>What does the userscript send?</strong> It sends parsed recommendation cards and metadata required to render the shared page.</li>
         </ol>
@@ -586,11 +612,18 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     shorts = _render_shorts_grid(snapshot.payload.shorts, metadata_reference_time)
     escaped_hash = html.escape(snapshot.hash)
     escaped_taken_at = html.escape(_format_snapshot_taken_at(metadata_reference_time))
+    snapshot_seo_description = (
+        "Shared personal YouTube recommendation page snapshot from myfyp (my for you page)."
+    )
+    escaped_snapshot_seo_description = html.escape(snapshot_seo_description)
     return f"""<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{escaped_snapshot_seo_description}">
+    <meta name="robots" content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <meta name="theme-color" content="#0f0f0f">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
