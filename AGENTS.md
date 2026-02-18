@@ -56,6 +56,10 @@ This file defines working rules for AI agents and human contributors in this rep
    - Use SemVer (`MAJOR.MINOR.PATCH`) for project/versioned deliverables.
    - Bump version strings whenever a commit changes behavior, APIs, packaging, or distributed extension artifacts.
    - Ensure all relevant version declarations stay in sync for the affected component(s) before commit.
+12. Keep README documentation up to date:
+   - Review impacted README files after every change.
+   - Update README content in the same change set when behavior, setup, usage, architecture, workflows, or UI changes.
+   - Do not leave stale instructions or examples.
 
 ## Task Execution Protocol (Required)
 
@@ -92,3 +96,4 @@ For each non-trivial task, the agent must follow this sequence:
 - Validation is reproducible locally and in CI (preferably via Docker workflow).
 - Boundaries between extension/API/frontend remain clean.
 - No unnecessary complexity added.
+- Relevant README files reviewed and updated if needed.
