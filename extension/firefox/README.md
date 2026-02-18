@@ -45,3 +45,7 @@ Required repository secrets:
 
 Workflow input:
 - `amo_channel` - `unlisted` (default) or `listed`.
+
+Workflow output:
+- uploads signed `.xpi` and build artifacts
+- publishes signed `.xpi` to GitHub Release tag `firefox-signed-latest`

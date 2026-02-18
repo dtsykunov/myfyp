@@ -12,7 +12,7 @@ on:
         default: unlisted
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: deploy-firefox-extension
@@ -49,3 +49,24 @@ jobs:
             dist/extensions/firefox/*.zip
             dist/extensions/firefox/*.sha256
             dist/extensions/firefox/signed/*
+
+      - name: Verify signed XPI exists
+        run: ls -1 dist/extensions/firefox/signed/*.xpi
+
+      - name: Publish signed XPI to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: firefox-signed-latest
+          name: myfyp Firefox signed extension (latest)
+          body: |
+            Rolling release of signed Firefox extension artifacts.
+
+            Channel: ${{ inputs.amo_channel }}
+            Commit: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: |
+            dist/extensions/firefox/signed/*.xpi
+            dist/extensions/firefox/*.zip
+            dist/extensions/firefox/*.sha256
