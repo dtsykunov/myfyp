@@ -175,7 +175,7 @@ docker compose up api
 ## Production Deployment (Cloudflare)
 
 `Deploy Worker` workflow:
-- runs worker lint/type/tests
+- runs after `CI` succeeds on `main`/`master` (or by manual dispatch)
 - applies D1 migrations
 - deploys worker using `pywrangler`
 
@@ -187,7 +187,7 @@ Required GitHub environment configuration is documented in:
 `Deploy Firefox Extension` workflow:
 - builds Firefox extension package
 - submits/signs via AMO (`web-ext sign`)
-- uploads built and signed artifacts as workflow artifacts
+- uploads built and signed artifacts as workflow artifacts (7-day retention)
 
 Required GitHub repository secrets:
 - `FIREFOX_AMO_API_KEY`
