@@ -28,6 +28,7 @@ def test_root_route_renders_installation_page() -> None:
     assert response.status == 200
     assert "myfyp (my for you page) by" in response.body
     assert "Install and Use" in response.body
+    assert 'href="/"' in response.body
     assert "https://myfyp.link/myfyp.user.js" in response.body
     assert 'href="/privacy"' in response.body
 
@@ -36,6 +37,7 @@ def test_privacy_route_renders_privacy_page() -> None:
     response = _run(handle_fetch(FakeRequest(method="GET", url="https://example.com/privacy"), FakeEnv()))
     assert response.status == 200
     assert "Privacy Notice" in response.body
+    assert 'href="/"' in response.body
     assert "Snapshots are automatically deleted after 7 days." in response.body
     assert 'href="/privacy"' in response.body
 

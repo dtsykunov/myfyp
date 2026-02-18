@@ -60,6 +60,10 @@ def render_home_html(userscript_url: str) -> str:
         flex-shrink: 0;
       }}
 
+      .brand-logo-link {{
+        display: inline-flex;
+      }}
+
       .brand-logo svg {{
         width: 29px;
         height: 20px;
@@ -135,12 +139,14 @@ def render_home_html(userscript_url: str) -> str:
   <body>
     <main>
       <header class="top-header">
-        <span class="brand-logo" aria-hidden="true">
+        <a class="brand-logo-link" href="/" aria-label="Open homepage">
+          <span class="brand-logo" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="29" height="20" viewBox="0 0 29 20" focusable="false" aria-hidden="true">
             <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
             <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
           </svg>
-        </span>
+          </span>
+        </a>
         <h1>myfyp (my for you page) by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
       <p class="page-description">Share a personal YouTube recommendation page snapshot with a temporary link.</p>
@@ -169,6 +175,9 @@ def render_privacy_html() -> str:
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
     <title>myfyp Privacy Notice</title>
     <style>
       :root {
@@ -194,9 +203,43 @@ def render_privacy_html() -> str:
         padding: 20px;
       }
 
-      h1 {
+      .top-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 12px;
+      }
+
+      .brand-logo {
+        width: 29px;
+        height: 20px;
+        flex-shrink: 0;
+      }
+
+      .brand-logo svg {
+        width: 29px;
+        height: 20px;
+        display: block;
+      }
+
+      .brand-logo-link {
+        display: inline-flex;
+      }
+
+      .brand-title {
         margin: 0 0 16px;
         font-size: 28px;
+      }
+
+      .title-link {
+        color: #2c9cd3;
+        text-decoration: underline;
+        font-family: "Zen Kaku Gothic New", sans-serif;
+        letter-spacing: .01em;
+        font-weight: 300;
+        font-style: italic;
+        font-optical-sizing: auto;
+        text-rendering: optimizeLegibility;
       }
 
       h2 {
@@ -232,7 +275,18 @@ def render_privacy_html() -> str:
   </head>
   <body>
     <main>
-      <h1>Privacy Notice</h1>
+      <header class="top-header">
+        <a class="brand-logo-link" href="/" aria-label="Open homepage">
+          <span class="brand-logo" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" width="29" height="20" viewBox="0 0 29 20" focusable="false" aria-hidden="true">
+              <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
+              <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
+            </svg>
+          </span>
+        </a>
+        <h1 class="brand-title">myfyp (my for you page) by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+      </header>
+      <h2>Privacy Notice</h2>
       <p>This service stores a temporary snapshot of a user's YouTube recommendations so it can be shared by link.</p>
 
       <h2>What Data Is Stored</h2>
@@ -311,6 +365,10 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
         width: 29px;
         height: 20px;
         flex-shrink: 0;
+      }}
+
+      .brand-logo-link {{
+        display: inline-flex;
       }}
 
       .brand-logo svg {{
@@ -681,12 +739,14 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
   <body>
     <main>
       <header class="top-header">
-        <span class="brand-logo" aria-hidden="true">
+        <a class="brand-logo-link" href="/" aria-label="Open homepage">
+          <span class="brand-logo" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" width="29" height="20" viewBox="0 0 29 20" focusable="false" aria-hidden="true">
             <path d="M14.4848 20C14.4848 20 23.5695 20 25.8229 19.4C27.0917 19.06 28.0459 18.08 28.3808 16.87C29 14.65 29 9.98 29 9.98C29 9.98 29 5.34 28.3808 3.14C28.0459 1.9 27.0917 0.94 25.8229 0.61C23.5695 0 14.4848 0 14.4848 0C14.4848 0 5.42037 0 3.17711 0.61C1.9286 0.94 0.954148 1.9 0.59888 3.14C0 5.34 0 9.98 0 9.98C0 9.98 0 14.65 0.59888 16.87C0.954148 18.08 1.9286 19.06 3.17711 19.4C5.42037 20 14.4848 20 14.4848 20Z" fill="#FF0033"></path>
             <path d="M19 10L11.5 5.75V14.25L19 10Z" fill="#fff"></path>
           </svg>
-        </span>
+          </span>
+        </a>
         <h1>myfyp (my for you page) by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
       <div class="meta-stack">
