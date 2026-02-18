@@ -4,8 +4,7 @@ Firefox WebExtension that mirrors the userscript behavior:
 
 - Manual snapshot upload from YouTube home page.
 - No automatic upload on page load.
-- Link history toast with share/delete/remove controls.
-- API base URL configuration.
+- Built-in link history with share/delete/remove controls.
 
 ## Load temporary add-on (local)
 
@@ -18,11 +17,7 @@ Firefox WebExtension that mirrors the userscript behavior:
 1. Open `https://www.youtube.com/` (or `https://m.youtube.com/`).
 2. Open the extension popup.
 3. Click `Upload Snapshot`.
-4. View the result toast on the YouTube page.
-
-## API base URL
-
-Use the popup input to change API base URL (default: `https://myfyp.link`).
+4. View created links directly in the popup.
 
 ## Build package
 

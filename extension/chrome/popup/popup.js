@@ -1,6 +1,4 @@
 const uploadButton = document.getElementById("upload-button");
-const refreshHistoryButton = document.getElementById("refresh-history-button");
-const clearHistoryButton = document.getElementById("clear-history-button");
 const historyListElement = document.getElementById("history-list");
 const statusElement = document.getElementById("status");
 
@@ -134,27 +132,6 @@ uploadButton.addEventListener("click", async () => {
     setStatus("Upload finished. Created links are listed below.", "success");
   } catch (error) {
     setStatus(error instanceof Error ? error.message : "Upload command failed.", "error");
-  }
-});
-
-refreshHistoryButton.addEventListener("click", async () => {
-  setStatus("Refreshing link list…");
-  try {
-    await refreshHistory();
-    setStatus("Link list refreshed.", "success");
-  } catch (error) {
-    setStatus(error instanceof Error ? error.message : "Failed to refresh link list.", "error");
-  }
-});
-
-clearHistoryButton.addEventListener("click", async () => {
-  setStatus("Clearing link list…");
-  try {
-    const result = await executeActiveTabCommand("clearHistory");
-    renderHistory(result.history || []);
-    setStatus("Link list cleared.", "success");
-  } catch (error) {
-    setStatus(error instanceof Error ? error.message : "Failed to clear link list.", "error");
   }
 });
 

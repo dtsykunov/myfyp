@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         myfyp
 // @namespace    https://myfyp.link
-// @version      0.1.20
+// @version      0.1.21
 // @description  Share your personal YouTube recommendation page snapshot
 // @match        https://www.youtube.com/
 // @match        https://m.youtube.com/
@@ -637,10 +637,6 @@
     setLinkHistory(filteredHistory);
   }
 
-  function clearLinkHistory() {
-    pageWindow.localStorage.removeItem(LINK_HISTORY_STORAGE_KEY);
-  }
-
   function formatHistoryTimestamp(isoString) {
     if (!isoString) {
       return "Unknown time";
@@ -762,24 +758,6 @@
     footer.style.display = "flex";
     footer.style.gap = "8px";
     footer.style.marginTop = "10px";
-
-    const clearAllButton = document.createElement("button");
-    clearAllButton.type = "button";
-    clearAllButton.textContent = "Clear all";
-    clearAllButton.style.padding = "4px 8px";
-    clearAllButton.style.border = "1px solid rgba(255,255,255,0.2)";
-    clearAllButton.style.borderRadius = "6px";
-    clearAllButton.style.background = "transparent";
-    clearAllButton.style.color = "#fff";
-    clearAllButton.style.cursor = "pointer";
-    clearAllButton.addEventListener("click", () => {
-      clearLinkHistory();
-      showToast({
-        title: `${APP_NAME}`,
-        message: "History cleared.",
-      });
-    });
-    footer.appendChild(clearAllButton);
 
     const closeButton = document.createElement("button");
     closeButton.type = "button";

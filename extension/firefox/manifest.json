@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "myfyp",
   "description": "Share your personal YouTube recommendation page snapshot.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "homepage_url": "https://myfyp.link",
   "browser_specific_settings": {
     "gecko": {

@@ -207,11 +207,6 @@
     return getSortedLinkHistory();
   }
 
-  function clearLinkHistory() {
-    window.localStorage.removeItem(LINK_HISTORY_STORAGE_KEY);
-    return [];
-  }
-
   function formatHistoryTimestamp(isoString) {
     if (!isoString) {
       return "Unknown time";
@@ -809,11 +804,6 @@
 
     if (command === "removeHistoryEntry") {
       const history = removeLinkHistoryEntry(args && args.entry);
-      return { ok: true, history };
-    }
-
-    if (command === "clearHistory") {
-      const history = clearLinkHistory();
       return { ok: true, history };
     }
 
