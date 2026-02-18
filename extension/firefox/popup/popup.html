@@ -28,17 +28,18 @@
         <p class="muted">Manual capture only. No automatic uploads.</p>
         <div class="button-row">
           <button id="upload-button" class="button button-primary" type="button">Upload Snapshot</button>
-          <button id="history-button" class="button button-muted" type="button">Show Link History</button>
+          <button id="refresh-history-button" class="button button-muted" type="button">Refresh List</button>
+          <button id="clear-history-button" class="button button-muted" type="button">Clear List</button>
         </div>
       </section>
 
-      <section class="card settings">
-        <label for="api-base-url" class="label">API Base URL</label>
-        <input id="api-base-url" class="input" type="url" placeholder="https://myfyp.link">
-        <div class="button-row">
-          <button id="save-url-button" class="button button-primary" type="button">Save</button>
-          <button id="reset-url-button" class="button button-muted" type="button">Reset default</button>
-        </div>
+      <section class="card">
+        <h2 class="history-title">Created Links</h2>
+        <p class="muted history-note">
+          API base URL is configurable from page console only:
+          <code>window.myfyp.setApiBaseUrl("https://myfyp.link")</code>
+        </p>
+        <div id="history-list" class="history-list"></div>
       </section>
 
       <p id="status" class="status" aria-live="polite"></p>

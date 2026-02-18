@@ -197,13 +197,19 @@
   }
 
   function removeLinkHistoryEntry(entryToRemove) {
+    const normalizedEntry = normalizeHistoryEntry(entryToRemove);
+    if (!normalizedEntry) {
+      return getSortedLinkHistory();
+    }
     const history = getLinkHistory();
-    const filtered = history.filter((entry) => !isSameLinkHistoryEntry(entry, entryToRemove));
+    const filtered = history.filter((entry) => !isSameLinkHistoryEntry(entry, normalizedEntry));
     setLinkHistory(filtered);
+    return getSortedLinkHistory();
   }
 
   function clearLinkHistory() {
     window.localStorage.removeItem(LINK_HISTORY_STORAGE_KEY);
+    return [];
   }
 
   function formatHistoryTimestamp(isoString) {
@@ -231,145 +237,36 @@
       .sort((left, right) => historyTimestampMs(right.createdAt) - historyTimestampMs(left.createdAt));
   }
 
-  function showLinkHistoryToast(entries) {
-    removeToast();
-
-    const toast = document.createElement("div");
-    toast.id = TOAST_ID;
-    toast.style.position = "fixed";
-    toast.style.top = "16px";
-    toast.style.right = "16px";
-    toast.style.maxWidth = "700px";
-    toast.style.maxHeight = "75vh";
-    toast.style.overflowY = "auto";
-    toast.style.padding = "12px 14px";
-    toast.style.borderRadius = "10px";
-    toast.style.background = "rgba(26, 26, 26, 0.95)";
-    toast.style.color = "#fff";
-    toast.style.fontSize = "13px";
-    toast.style.lineHeight = "1.35";
-    toast.style.zIndex = "2147483647";
-    toast.style.boxShadow = "0 8px 24px rgba(0,0,0,0.35)";
-    toast.style.border = "1px solid rgba(255,255,255,0.12)";
-
-    const title = document.createElement("div");
-    title.textContent = `${APP_NAME} link history`;
-    title.style.fontWeight = "700";
-    title.style.marginBottom = "6px";
-    toast.appendChild(title);
-
-    const subtitle = document.createElement("div");
-    subtitle.textContent = `Saved snapshots: ${entries.length}`;
-    subtitle.style.color = "rgba(255,255,255,0.82)";
-    toast.appendChild(subtitle);
-
-    const list = document.createElement("div");
-    list.style.marginTop = "10px";
-    list.style.display = "grid";
-    list.style.gap = "8px";
-
-    const totalEntries = entries.length;
-    for (const [index, entry] of entries.entries()) {
-      const line = document.createElement("div");
-      const position = totalEntries - index;
-      line.append(document.createTextNode(`#${position} • ${formatHistoryTimestamp(entry.createdAt)} • `));
-
-      if (entry.shareUrl) {
-        const shareLink = document.createElement("a");
-        shareLink.href = entry.shareUrl;
-        shareLink.textContent = "Share";
-        shareLink.target = "_blank";
-        shareLink.rel = "noopener noreferrer";
-        shareLink.style.color = "#8ab4ff";
-        shareLink.style.textDecoration = "none";
-        line.appendChild(shareLink);
-      } else {
-        line.append(document.createTextNode("Share"));
-      }
-
-      line.append(document.createTextNode(" • "));
-
-      if (entry.removeUrl) {
-        const deleteLink = document.createElement("a");
-        deleteLink.href = entry.removeUrl;
-        deleteLink.textContent = "Delete";
-        deleteLink.target = "_blank";
-        deleteLink.rel = "noopener noreferrer";
-        deleteLink.style.color = "#8ab4ff";
-        deleteLink.style.textDecoration = "none";
-        line.appendChild(deleteLink);
-      } else {
-        line.append(document.createTextNode("Delete"));
-      }
-
-      line.append(document.createTextNode(" • "));
-      const removeButton = document.createElement("button");
-      removeButton.type = "button";
-      removeButton.textContent = "Remove from list";
-      removeButton.style.padding = "0";
-      removeButton.style.border = "none";
-      removeButton.style.background = "transparent";
-      removeButton.style.color = "#8ab4ff";
-      removeButton.style.cursor = "pointer";
-      removeButton.style.fontSize = "13px";
-      removeButton.style.lineHeight = "1.35";
-      removeButton.addEventListener("click", () => {
-        removeLinkHistoryEntry(entry);
-        showLinkHistory();
-      });
-      line.appendChild(removeButton);
-
-      list.appendChild(line);
+  function normalizeHistoryEntry(entry) {
+    if (!entry || typeof entry !== "object") {
+      return null;
     }
-    toast.appendChild(list);
-
-    const footer = document.createElement("div");
-    footer.style.display = "flex";
-    footer.style.gap = "8px";
-    footer.style.marginTop = "10px";
-
-    const clearAllButton = document.createElement("button");
-    clearAllButton.type = "button";
-    clearAllButton.textContent = "Clear all";
-    clearAllButton.style.padding = "4px 8px";
-    clearAllButton.style.border = "1px solid rgba(255,255,255,0.2)";
-    clearAllButton.style.borderRadius = "6px";
-    clearAllButton.style.background = "transparent";
-    clearAllButton.style.color = "#fff";
-    clearAllButton.style.cursor = "pointer";
-    clearAllButton.addEventListener("click", () => {
-      clearLinkHistory();
-      showToast({ title: APP_NAME, message: "History cleared." });
-    });
-    footer.appendChild(clearAllButton);
-
-    const closeButton = document.createElement("button");
-    closeButton.type = "button";
-    closeButton.textContent = "Close";
-    closeButton.style.padding = "4px 8px";
-    closeButton.style.border = "1px solid rgba(255,255,255,0.2)";
-    closeButton.style.borderRadius = "6px";
-    closeButton.style.background = "transparent";
-    closeButton.style.color = "#fff";
-    closeButton.style.cursor = "pointer";
-    closeButton.addEventListener("click", removeToast);
-    footer.appendChild(closeButton);
-
-    toast.appendChild(footer);
-    document.body.appendChild(toast);
+    const normalized = {
+      createdAt: normalizeText(entry.createdAt || ""),
+      shareUrl: normalizeText(entry.shareUrl || ""),
+      removeUrl: normalizeText(entry.removeUrl || ""),
+      hash: normalizeText(entry.hash || "")
+    };
+    if (!normalized.createdAt && !normalized.shareUrl && !normalized.removeUrl && !normalized.hash) {
+      return null;
+    }
+    return normalized;
   }
 
   function showLinkHistory() {
     const history = getSortedLinkHistory();
     if (history.length === 0) {
-      showToast({
-        title: APP_NAME,
-        message: "No uploaded snapshot links found yet.",
-        variant: "error"
-      });
-      return;
+      console.info(`[${APP_NAME}] No uploaded snapshot links found yet.`);
+      return [];
     }
-    showLinkHistoryToast(history);
+    console.table(
+      history.map((entry) => ({
+        createdAt: formatHistoryTimestamp(entry.createdAt),
+        shareUrl: entry.shareUrl,
+        removeUrl: entry.removeUrl
+      }))
+    );
+    return history;
   }
 
   function toAbsoluteUrl(href, baseUrl) {
@@ -887,12 +784,8 @@
       showToast({
         title: `${APP_NAME} upload complete`,
         message: snapshotUrl
-          ? "Snapshot and remove links:"
-          : "Upload succeeded, but no snapshot link was returned.",
-        links: [
-          snapshotUrl ? { label: "Share link", url: snapshotUrl } : null,
-          removeUrl ? { label: "Remove link", url: removeUrl } : null
-        ].filter(Boolean)
+          ? "Snapshot uploaded. Open extension popup to view created links."
+          : "Upload succeeded, but no snapshot link was returned."
       });
 
       return uploaded.response;
@@ -904,15 +797,28 @@
     }
   }
 
-  async function handleCommand(command) {
+  async function handleCommand(command, args = null) {
     if (command === "upload") {
-      await uploadLatestSnapshot();
-      return { ok: true };
+      const response = await uploadLatestSnapshot();
+      return { ok: true, response };
+    }
+
+    if (command === "getHistory") {
+      return { ok: true, history: getSortedLinkHistory() };
+    }
+
+    if (command === "removeHistoryEntry") {
+      const history = removeLinkHistoryEntry(args && args.entry);
+      return { ok: true, history };
+    }
+
+    if (command === "clearHistory") {
+      const history = clearLinkHistory();
+      return { ok: true, history };
     }
 
     if (command === "showHistory") {
-      showLinkHistory();
-      return { ok: true };
+      return { ok: true, history: showLinkHistory() };
     }
 
     return { ok: false, error: `Unknown command: ${String(command)}` };
@@ -925,7 +831,7 @@
 
     void (async () => {
       try {
-        const result = await handleCommand(message.command);
+        const result = await handleCommand(message.command, message.args);
         sendResponse(result);
       } catch (error) {
         sendResponse({

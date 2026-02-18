@@ -60,10 +60,22 @@ body {
   margin-bottom: 10px;
 }
 
+.history-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
 .muted {
   margin: 0 0 10px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.history-note code {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--accent);
+  word-break: break-all;
 }
 
 .label {
@@ -118,6 +130,60 @@ body {
 
 .button-muted:hover {
   border-color: rgba(255, 255, 255, 0.25);
+}
+
+.history-list {
+  display: grid;
+  gap: 8px;
+}
+
+.history-empty {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.history-row {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.01);
+  display: grid;
+  gap: 4px;
+}
+
+.history-row-meta {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.history-row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.history-link {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.history-link:hover {
+  text-decoration: underline;
+}
+
+.history-remove {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.history-remove:hover {
+  text-decoration: underline;
 }
 
 .status {

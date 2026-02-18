@@ -3,7 +3,6 @@ const DEFAULT_API_BASE_URL = "https://myfyp.link";
 const API_BASE_URL_STORAGE_KEY = "myfyp.apiBaseUrl";
 
 const MENU_UPLOAD = "myfyp-upload";
-const MENU_HISTORY = "myfyp-history";
 
 function normalizeApiBaseUrl(value) {
   return String(value || "").trim().replace(/\/+$/, "");
@@ -103,7 +102,7 @@ async function postSnapshot(snapshot, apiBaseUrl) {
   }
 }
 
-async function executeInActiveTab(command) {
+async function executeInActiveTab(command, args = null) {
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!activeTab || typeof activeTab.id !== "number") {
     return { ok: false, error: "No active tab found." };
@@ -112,7 +111,8 @@ async function executeInActiveTab(command) {
   try {
     const result = await chrome.tabs.sendMessage(activeTab.id, {
       type: "myfyp.command",
-      command
+      command,
+      args
     });
     if (!result || result.ok !== true) {
       return {
@@ -138,11 +138,6 @@ async function createContextMenus() {
     title: "myfyp: Upload Snapshot",
     contexts: ["action"]
   });
-  chrome.contextMenus.create({
-    id: MENU_HISTORY,
-    title: "myfyp: Show Link History",
-    contexts: ["action"]
-  });
 }
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -152,10 +147,6 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener((info) => {
   if (info.menuItemId === MENU_UPLOAD) {
     void executeInActiveTab("upload");
-    return;
-  }
-  if (info.menuItemId === MENU_HISTORY) {
-    void executeInActiveTab("showHistory");
   }
 });
 
@@ -190,7 +181,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
           return;
         }
         case "myfyp.executeActiveTabCommand": {
-          const result = await executeInActiveTab(message.command);
+          const result = await executeInActiveTab(message.command, message.args);
           sendResponse(result);
           return;
         }
