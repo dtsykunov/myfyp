@@ -35,6 +35,8 @@ WEB_EXT_API_SECRET=... \
 ./extension/firefox/scripts/deploy.sh
 ```
 
+If the current manifest version is already uploaded to AMO, deployment exits successfully with a warning (idempotent no-op).
+
 For `listed` channel deployments, AMO listing metadata is sourced from:
 
 - `extension/firefox/amo/metadata.listed.json` (summary, categories, tags, support/homepage links)
@@ -54,3 +56,4 @@ Workflow input:
 Workflow output:
 - uploads signed `.xpi` and build artifacts
 - publishes signed `.xpi` to GitHub Release tag `extensions-latest`
+  - when AMO already has the same version, it still refreshes zip/checksum assets and keeps existing release `.xpi` files

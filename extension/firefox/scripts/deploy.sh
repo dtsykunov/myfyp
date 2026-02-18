@@ -61,8 +61,10 @@ PY
 
 amo_channel="${FIREFOX_AMO_CHANNEL:-unlisted}"
 artifacts_dir="${out_dir}/signed"
+version_exists_marker="${artifacts_dir}/.version-already-exists"
 mkdir -p "${artifacts_dir}"
 rm -f "${artifacts_dir}"/*.xpi
+rm -f "${version_exists_marker}"
 
 web_ext_args=()
 if [[ "${amo_channel}" == "listed" ]]; then
@@ -74,6 +76,8 @@ if [[ "${amo_channel}" == "listed" ]]; then
 fi
 
 echo "Uploading and signing Firefox extension package: ${latest_zip}"
+sign_log_file="$(mktemp)"
+set +e
 npx --yes web-ext@8 sign \
   --source-dir "${firefox_dir}" \
   --artifacts-dir "${artifacts_dir}" \
@@ -81,7 +85,22 @@ npx --yes web-ext@8 sign \
   --api-secret "${WEB_EXT_API_SECRET}" \
   --channel "${amo_channel}" \
   --ignore-files "scripts/**" "README.md" \
-  "${web_ext_args[@]}"
+  "${web_ext_args[@]}" >"${sign_log_file}" 2>&1
+sign_exit_code=$?
+set -e
+cat "${sign_log_file}"
+
+if [[ "${sign_exit_code}" -ne 0 ]]; then
+  if grep -qi "already exists" "${sign_log_file}" && grep -qi "version" "${sign_log_file}"; then
+    echo "Warning: Firefox add-on version ${extension_version} already exists on AMO; skipping upload."
+    touch "${version_exists_marker}"
+    rm -f "${sign_log_file}"
+    exit 0
+  fi
+  rm -f "${sign_log_file}"
+  exit "${sign_exit_code}"
+fi
+rm -f "${sign_log_file}"
 
 signed_source_xpi="$(ls -t "${artifacts_dir}"/*.xpi | head -n 1)"
 if [[ -z "${signed_source_xpi:-}" ]]; then

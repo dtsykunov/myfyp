@@ -37,11 +37,18 @@ jobs:
         run: ./extension/firefox/scripts/build.sh
 
       - name: Publish Firefox extension to AMO
+        id: publish_firefox
         env:
           WEB_EXT_API_KEY: ${{ secrets.FIREFOX_AMO_API_KEY }}
           WEB_EXT_API_SECRET: ${{ secrets.FIREFOX_AMO_API_SECRET }}
           FIREFOX_AMO_CHANNEL: ${{ inputs.amo_channel }}
-        run: ./extension/firefox/scripts/deploy.sh
+        run: |
+          ./extension/firefox/scripts/deploy.sh
+          if [ -f dist/extensions/firefox/signed/.version-already-exists ]; then
+            echo "version_already_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "version_already_exists=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload Firefox extension artifacts
         uses: actions/upload-artifact@v4
@@ -53,13 +60,31 @@ jobs:
             dist/extensions/firefox/*.sha256
             dist/extensions/firefox/signed/*
 
+      - name: Warn when version is already uploaded to AMO
+        if: steps.publish_firefox.outputs.version_already_exists == 'true'
+        run: |
+          echo "::warning::Firefox add-on version already exists on AMO. Treated as successful no-op."
+
       - name: Verify signed XPI exists
-        run: ls -1 dist/extensions/firefox/signed/*.xpi
+        run: |
+          if ls -1 dist/extensions/firefox/signed/*.xpi >/dev/null 2>&1; then
+            ls -1 dist/extensions/firefox/signed/*.xpi
+            exit 0
+          fi
+          if [ "${{ steps.publish_firefox.outputs.version_already_exists }}" = "true" ]; then
+            echo "::warning::No new signed XPI produced because AMO already has this version. Existing release XPI assets will be retained."
+            exit 0
+          fi
+          echo "Expected signed XPI output, but none was found." >&2
+          exit 1
 
       - name: Remove previous Firefox assets from rolling release
         uses: actions/github-script@v7
+        env:
+          KEEP_EXISTING_XPI: ${{ steps.publish_firefox.outputs.version_already_exists == 'true' && 'true' || 'false' }}
         with:
           script: |
+            const keepExistingXpi = process.env.KEEP_EXISTING_XPI === "true";
             const tag = "extensions-latest";
             let release;
             try {
@@ -82,9 +107,15 @@ jobs:
               per_page: 100,
             });
 
-            const targets = assets.filter((asset) =>
-              /^myfyp-firefox-.*\.(zip|sha256)$/i.test(asset.name) || /\.xpi$/i.test(asset.name)
-            );
+            const targets = assets.filter((asset) => {
+              if (/^myfyp-firefox-.*\.(zip|sha256)$/i.test(asset.name)) {
+                return true;
+              }
+              if (/\.xpi$/i.test(asset.name)) {
+                return !keepExistingXpi;
+              }
+              return false;
+            });
 
             for (const asset of targets) {
               await github.rest.repos.deleteReleaseAsset({
@@ -107,6 +138,7 @@ jobs:
           prerelease: true
           make_latest: false
           overwrite_files: true
+          fail_on_unmatched_files: false
           files: |
             dist/extensions/firefox/signed/*.xpi
             dist/extensions/firefox/*.zip
