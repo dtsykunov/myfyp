@@ -27,3 +27,8 @@ Chrome Manifest V3 extension that mirrors the userscript behavior:
 ```
 
 This creates a zip file in `dist/extensions/chrome/`.
+
+## Discovery Metadata Notes
+
+- In-repo metadata comes from `extension/chrome/manifest.json` (name, short name, description, homepage, icons).
+- Chrome Web Store listing metadata such as category, detailed description, screenshots, and promotional assets are managed in the Chrome Web Store dashboard.

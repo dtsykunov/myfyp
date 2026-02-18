@@ -35,6 +35,11 @@ WEB_EXT_API_SECRET=... \
 ./extension/firefox/scripts/deploy.sh
 ```
 
+For `listed` channel deployments, AMO listing metadata is sourced from:
+
+- `extension/firefox/amo/metadata.listed.json` (summary, categories, tags, support/homepage links)
+- `extension/firefox/icons/icon-128.png` (listing icon upload)
+
 ## GitHub Actions Deployment
 
 Workflow: `.github/workflows/deploy-extension-firefox.yml`

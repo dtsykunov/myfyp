@@ -1,0 +1,29 @@
+{
+  "summary": {
+    "en-US": "Capture and share your personal YouTube recommendation feed snapshot with temporary links."
+  },
+  "categories": {
+    "firefox": [
+      "feeds-news-blogging",
+      "other"
+    ]
+  },
+  "tags": [
+    "youtube",
+    "recommendations",
+    "sharing",
+    "productivity"
+  ],
+  "homepage": {
+    "en-US": "https://myfyp.link/"
+  },
+  "support_email": {
+    "en-US": "le7edea36@mozmail.com"
+  },
+  "support_url": {
+    "en-US": "https://myfyp.link/privacy"
+  },
+  "version": {
+    "license": "MIT"
+  }
+}
