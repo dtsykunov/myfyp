@@ -35,6 +35,7 @@
             packages = [
               python
               pkgs.pyright
+              pkgs.nodejs_22
               pkgs.docker
               pkgs.docker-compose
               pkgs.zip

@@ -37,3 +37,9 @@ jobs:
 
       - name: Build Chrome extension package
         run: ./extension/chrome/scripts/build.sh
+
+      - name: Build Firefox extension package
+        run: ./extension/firefox/scripts/build.sh
+
+      - name: Build Safari extension package
+        run: ./extension/safari/scripts/build.sh
