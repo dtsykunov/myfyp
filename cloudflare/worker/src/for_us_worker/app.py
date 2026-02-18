@@ -41,8 +41,8 @@ _USERSCRIPT_REDIRECT_URL = (
     "dtsykunov/myfyp/master/extension/userscript/myfyp.user.js"
 )
 _ICON_REDIRECT_BASE_URL = (
-    "https://raw.githubusercontent.com/"
-    "dtsykunov/myfyp/master/brand/icons/web"
+    "https://media.githubusercontent.com/media/"
+    "dtsykunov/myfyp/refs/heads/master/brand/icons/web"
 )
 _ICON_FILE_NAMES = {
     "favicon.ico",

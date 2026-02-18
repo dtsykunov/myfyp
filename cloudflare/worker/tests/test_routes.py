@@ -74,6 +74,7 @@ def test_icon_routes_redirect_to_canonical_brand_assets() -> None:
     for icon_path in icon_paths:
         response = _run(handle_fetch(FakeRequest(method="GET", url=f"https://example.com{icon_path}"), FakeEnv()))
         assert response.status == 302
+        assert response.headers["location"].startswith("https://media.githubusercontent.com/media/")
         assert response.headers["location"].endswith(f"/brand/icons/web{icon_path}")
         assert response.headers["cache-control"] == "public, max-age=86400, immutable"
 
