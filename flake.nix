@@ -37,6 +37,7 @@
               pkgs.pyright
               pkgs.docker
               pkgs.docker-compose
+              pkgs.zip
             ];
 
             shellHook = ''

@@ -34,3 +34,6 @@ jobs:
 
       - name: Run Worker tests in container
         run: docker compose run --rm worker-test
+
+      - name: Build Chrome extension package
+        run: ./extension/chrome/scripts/build.sh
