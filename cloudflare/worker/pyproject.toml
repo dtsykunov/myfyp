@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "for-us-worker"
 version = "0.1.0"
-description = "Cloudflare Python Worker adapter for For Us Page"
+description = "Cloudflare Python Worker adapter for myfyp"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "pydantic==1.10.24",

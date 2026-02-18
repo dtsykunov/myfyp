@@ -1,5 +1,5 @@
 {
-  description = "For Us Page development shell";
+  description = "myfyp development shell";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -42,7 +42,7 @@
             shellHook = ''
               repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
               export PYTHONPATH="$repo_root/api/src${PYTHONPATH:+:$PYTHONPATH}"
-              echo "For Us Page dev shell loaded."
+              echo "myfyp dev shell loaded."
               echo "Run: cd api && ./scripts/run-tests.sh"
             '';
           };

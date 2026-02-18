@@ -18,7 +18,7 @@
 (function () {
   "use strict";
 
-  const APP_NAME = "For Us Page";
+  const APP_NAME = "myfyp";
   const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
   const AD_HOST_PATTERNS = [
     "googleadservices.com",
@@ -38,13 +38,13 @@
     month: 2592000,
     year: 31536000,
   };
-  const API_BASE_URL_STORAGE_KEY = "forUsPage.apiBaseUrl";
-  const API_BASE_URL_MIGRATION_KEY = "forUsPage.apiBaseUrlMigratedFromLocalhost";
-  const LINK_HISTORY_STORAGE_KEY = "forUsPage.linkHistory";
+  const API_BASE_URL_STORAGE_KEY = "myfyp.apiBaseUrl";
+  const API_BASE_URL_MIGRATION_KEY = "myfyp.apiBaseUrlMigratedFromLocalhost";
+  const LINK_HISTORY_STORAGE_KEY = "myfyp.linkHistory";
   const LINK_HISTORY_MAX_ITEMS = 500;
-  const DEBUG_STORAGE_KEY = "forUsPage.debug";
+  const DEBUG_STORAGE_KEY = "myfyp.debug";
   const DEFAULT_API_BASE_URL = "https://myfyp.link";
-  const TOAST_ID = "for-us-page-toast";
+  const TOAST_ID = "myfyp-toast";
   const CHANNEL_PARSE_WARNING_LIMIT = 5;
   const pageWindow = typeof unsafeWindow !== "undefined" ? unsafeWindow : window;
   let channelParseWarnings = 0;
@@ -289,7 +289,7 @@
     console.debug(
       `[${APP_NAME}] Missing channel metadata for video ${videoHash}.`,
       {
-        hint: "Set localStorage.forUsPage.debug='1' to keep debug logs enabled.",
+        hint: "Set localStorage.myfyp.debug='1' to keep debug logs enabled.",
         snippet: item.outerHTML.slice(0, 1200),
       }
     );
@@ -1090,7 +1090,7 @@
   }
 
   function registerPublicApi() {
-    pageWindow.forUsPage = Object.assign(pageWindow.forUsPage || {}, {
+    pageWindow.myfyp = Object.assign(pageWindow.myfyp || {}, {
       extractVideoHashFromHref,
       collectVideoHashesFromDocument: collectRecommendationsFromDocument,
       collectRecommendationsFromDocument,
@@ -1109,10 +1109,10 @@
     if (typeof GM_registerMenuCommand !== "function") {
       return;
     }
-    GM_registerMenuCommand("For Us Page: Upload Snapshot", () => {
+    GM_registerMenuCommand("myfyp: Upload Snapshot", () => {
       void uploadLatestSnapshot();
     });
-    GM_registerMenuCommand("For Us Page: Show Link History", () => {
+    GM_registerMenuCommand("myfyp: Show Link History", () => {
       showLinkHistory();
     });
   }
@@ -1121,7 +1121,7 @@
     registerPublicApi();
     registerMenuCommands();
     console.info(
-      `[${APP_NAME}] Userscript loaded. Run window.forUsPage.uploadLatestSnapshot() to upload and print API response.`
+      `[${APP_NAME}] Userscript loaded. Run window.myfyp.uploadLatestSnapshot() to upload and print API response.`
     );
   }
 

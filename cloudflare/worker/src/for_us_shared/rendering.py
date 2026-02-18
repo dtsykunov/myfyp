@@ -156,7 +156,7 @@ def render_home_html(userscript_url: str) -> str:
           <li>Install Tampermonkey (or another userscript manager).</li>
           <li>Open and install the userscript: <a class="userscript-link" href="{escaped_userscript_url}">{escaped_userscript_url}</a>.</li>
           <li>Open <code>https://www.youtube.com/</code>.</li>
-          <li>From Tampermonkey menu, run <code>For Us Page: Upload Snapshot</code>, or run <code>window.forUsPage.uploadLatestSnapshot()</code> in browser console.</li>
+          <li>From Tampermonkey menu, run <code>myfyp: Upload Snapshot</code>, or run <code>window.myfyp.uploadLatestSnapshot()</code> in browser console.</li>
           <li>Open the returned snapshot link to view the rendered page.</li>
         </ol>
       </section>

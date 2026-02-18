@@ -25,8 +25,8 @@ nix develop --command sh -c "./cloudflare/worker/scripts/run-tests.sh"
 ## D1 migrations
 
 ```bash
-npx wrangler d1 migrations apply for-us-page --local
-npx wrangler d1 migrations apply for-us-page --remote
+npx wrangler d1 migrations apply myfyp --local
+npx wrangler d1 migrations apply myfyp --remote
 ```
 
 ## GitHub Actions Deployment

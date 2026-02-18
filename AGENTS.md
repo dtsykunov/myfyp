@@ -4,10 +4,10 @@ This file defines working rules for AI agents and human contributors in this rep
 
 ## Project Context (from README)
 
-- Project: `For Us Page`
+- Project: `myfyp`
 - Purpose: Share a snapshot of a user's YouTube recommendations via a temporary link.
 - User flow:
-  1. User opens YouTube and triggers `Share Recommendation Page` in the extension.
+  1. User opens YouTube and triggers `myfyp: Upload Snapshot` in the userscript menu.
   2. Extension generates a URL in the format `https://<domain>/<hash>`.
   3. Recipient opens the link and sees the captured recommendations.
 - System flow:

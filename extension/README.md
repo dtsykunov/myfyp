@@ -12,7 +12,7 @@ Current state:
 From browser console on YouTube:
 
 ```js
-window.forUsPage.uploadLatestSnapshot()
+window.myfyp.uploadLatestSnapshot()
 ```
 
 This uploads payload JSON in the form:
@@ -42,10 +42,10 @@ Default API URL is `http://127.0.0.1:8000`.
 To override it from console:
 
 ```js
-window.forUsPage.setApiBaseUrl("http://127.0.0.1:8000")
+window.myfyp.setApiBaseUrl("http://127.0.0.1:8000")
 ```
 
-If `window.forUsPage` is undefined, force-update the userscript in Tampermonkey and reload YouTube.
+If `window.myfyp` is undefined, force-update the userscript in Tampermonkey and reload YouTube.
 
 Planned behavior:
 1. Parse recommendations from `youtube.com`.

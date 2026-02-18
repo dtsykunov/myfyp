@@ -1,1 +1,1 @@
-"""Cloudflare Worker adapter for For Us Page."""
+"""Cloudflare Worker adapter for myfyp."""

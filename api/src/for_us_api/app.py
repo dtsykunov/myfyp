@@ -80,7 +80,7 @@ def create_app(
         snapshot_store.initialize()
         yield
 
-    app = FastAPI(title="For Us API", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="myfyp API", version="0.1.0", lifespan=lifespan)
 
     @app.middleware("http")
     async def enforce_snapshot_body_size(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:  # pyright: ignore[reportUnusedFunction]

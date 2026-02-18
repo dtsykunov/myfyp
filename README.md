@@ -1,4 +1,4 @@
-# myfyp (For Us Page)
+# myfyp
 
 `myfyp` lets you capture your current YouTube home recommendations and share them as a temporary link.
 
@@ -10,7 +10,7 @@ The project has three isolated parts:
 ## What It Does
 
 1. You open YouTube home.
-2. You trigger upload manually from Tampermonkey (`For Us Page: Upload Snapshot`) or console.
+2. You trigger upload manually from Tampermonkey (`myfyp: Upload Snapshot`) or console.
 3. The userscript parses recommendation cards and sends a JSON payload to the API.
 4. The API stores the snapshot for 7 days and returns:
    - share URL
@@ -45,8 +45,8 @@ cd api
 `https://www.youtube.com/`
 
 5. Trigger upload:
-- Tampermonkey menu: `For Us Page: Upload Snapshot`
-- or console: `window.forUsPage.uploadLatestSnapshot()`
+- Tampermonkey menu: `myfyp: Upload Snapshot`
+- or console: `window.myfyp.uploadLatestSnapshot()`
 
 ## Data Model
 
@@ -125,11 +125,11 @@ Default limits:
 - Script keeps local history of created share/remove links (`localStorage`).
 
 Console API:
-- `window.forUsPage.uploadLatestSnapshot()`
-- `window.forUsPage.showLinkHistory()`
-- `window.forUsPage.getLinkHistory()`
-- `window.forUsPage.setApiBaseUrl("http://127.0.0.1:8000")`
-- `window.forUsPage.getApiBaseUrl()`
+- `window.myfyp.uploadLatestSnapshot()`
+- `window.myfyp.showLinkHistory()`
+- `window.myfyp.getLinkHistory()`
+- `window.myfyp.setApiBaseUrl("http://127.0.0.1:8000")`
+- `window.myfyp.getApiBaseUrl()`
 
 ## Repository Layout
 
