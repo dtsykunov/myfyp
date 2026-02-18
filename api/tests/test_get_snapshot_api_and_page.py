@@ -208,7 +208,7 @@ def test_root_page_includes_installation_instructions(tmp_path: Path) -> None:
     assert '<img src="/favicon.svg" alt="">' in response.text
     assert 'href="/"' in response.text
     assert 'href="http://testserver/myfyp.user.js"' in response.text
-    assert 'href="https://github.com/dtsykunov/myfyp/releases/tag/extensions-latest"' in response.text
+    assert 'href="https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-firefox-latest.xpi"' in response.text
     assert 'href="https://www.tampermonkey.net/"' in response.text
     assert 'href="https://violentmonkey.github.io/get-it/"' in response.text
     assert 'href="https://www.greasespot.net/"' in response.text

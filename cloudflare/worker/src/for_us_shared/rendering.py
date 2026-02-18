@@ -16,7 +16,10 @@ from for_us_shared.models import RecommendationItem, StoredSnapshot
 
 def render_home_html(userscript_url: str) -> str:
     escaped_userscript_url = html.escape(userscript_url)
-    firefox_extension_url = "https://github.com/dtsykunov/myfyp/releases/tag/extensions-latest"
+    firefox_extension_url = (
+        "https://github.com/dtsykunov/myfyp/releases/download/"
+        "extensions-latest/myfyp-firefox-latest.xpi"
+    )
     escaped_firefox_extension_url = html.escape(firefox_extension_url)
     parsed_userscript_url = urlsplit(userscript_url)
     home_url = "/"
@@ -399,7 +402,7 @@ def render_home_html(userscript_url: str) -> str:
           Each snapshot has a 7-day lifetime and includes a private remove link for immediate deletion.
         </p>
         <div class="hero-actions">
-          <a class="button-link button-muted" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">Download Firefox Extension</a>
+          <a class="button-link button-muted" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">Install Firefox Extension</a>
           <a class="button-link button-primary userscript-link" href="{escaped_userscript_url}">Install myfyp.user.js</a>
           <a class="button-link button-muted" href="/privacy">Review Privacy Notice</a>
         </div>
@@ -410,9 +413,9 @@ def render_home_html(userscript_url: str) -> str:
           <h2 class="section-title">Install and Use</h2>
           <h3 class="install-subtitle">Option 1: Firefox Extension</h3>
           <ol class="steps">
-            <li>Download the signed Firefox extension package from <a class="userscript-link" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">GitHub Releases</a>.</li>
-            <li>In Firefox, open <code>about:addons</code> and choose <code>Install Add-on From File...</code>.</li>
-            <li>Open <code>https://www.youtube.com/</code>, open the extension popup, then click <code>Upload Snapshot</code>.</li>
+            <li>Open the stable install link: <a class="userscript-link" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">{escaped_firefox_extension_url}</a>.</li>
+            <li>Confirm the Firefox install prompt.</li>
+            <li>Open <code>https://www.youtube.com/</code>, open the extension popup, and click <code>Upload Snapshot</code>.</li>
           </ol>
           <h3 class="install-subtitle">Option 2: Userscript</h3>
           <ol class="steps">
