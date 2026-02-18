@@ -44,9 +44,25 @@ if [[ -z "${latest_zip:-}" ]]; then
   exit 1
 fi
 
+extension_version="$("${python_bin}" - "${manifest_path}" <<'PY'
+import json
+import sys
+
+manifest_file = sys.argv[1]
+with open(manifest_file, "r", encoding="utf-8") as handle:
+    manifest = json.load(handle)
+
+version = manifest.get("version")
+if not isinstance(version, str) or not version.strip():
+    raise SystemExit("manifest.json is missing a valid version string.")
+print(version.strip())
+PY
+)"
+
 amo_channel="${FIREFOX_AMO_CHANNEL:-unlisted}"
 artifacts_dir="${out_dir}/signed"
 mkdir -p "${artifacts_dir}"
+rm -f "${artifacts_dir}"/*.xpi
 
 web_ext_args=()
 if [[ "${amo_channel}" == "listed" ]]; then
@@ -66,6 +82,18 @@ npx --yes web-ext@8 sign \
   --channel "${amo_channel}" \
   --ignore-files "scripts/**" "README.md" \
   "${web_ext_args[@]}"
+
+signed_source_xpi="$(ls -t "${artifacts_dir}"/*.xpi | head -n 1)"
+if [[ -z "${signed_source_xpi:-}" ]]; then
+  echo "web-ext sign did not produce any .xpi artifact." >&2
+  exit 1
+fi
+
+versioned_xpi="${artifacts_dir}/myfyp-firefox-${extension_version}.xpi"
+latest_xpi="${artifacts_dir}/myfyp-firefox-latest.xpi"
+
+mv "${signed_source_xpi}" "${versioned_xpi}"
+cp "${versioned_xpi}" "${latest_xpi}"
 
 if [[ "${amo_channel}" == "listed" ]]; then
   if ! command -v curl >/dev/null 2>&1; then
