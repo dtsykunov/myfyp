@@ -403,7 +403,7 @@ def render_home_html(userscript_url: str) -> str:
         </p>
         <div class="hero-actions">
           <a class="button-link button-muted" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">Install Firefox Extension</a>
-          <a class="button-link button-primary userscript-link" href="{escaped_userscript_url}">Install myfyp.user.js</a>
+          <a class="button-link button-primary userscript-link" href="{escaped_userscript_url}">Install Userscript</a>
           <a class="button-link button-muted" href="/privacy">Review Privacy Notice</a>
         </div>
       </section>
@@ -419,7 +419,7 @@ def render_home_html(userscript_url: str) -> str:
           </ol>
           <h3 class="install-subtitle">Option 2: Userscript</h3>
           <ol class="steps">
-            <li>Install a userscript manager: <a class="userscript-link" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a>, <a class="userscript-link" href="https://violentmonkey.github.io/get-it/" target="_blank" rel="noopener noreferrer">Violentmonkey</a>, <a class="userscript-link" href="https://www.greasespot.net/" target="_blank" rel="noopener noreferrer">Greasemonkey</a>, or <a class="userscript-link" href="https://addons.mozilla.org/firefox/addon/firemonkey/" target="_blank" rel="noopener noreferrer">FireMonkey</a>.</li>
+            <li>Install <a class="userscript-link" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a> (or another userscript manager).</li>
             <li>Open and install the userscript: <a class="userscript-link" href="{escaped_userscript_url}">{escaped_userscript_url}</a>.</li>
             <li>Open <code>https://www.youtube.com/</code>.</li>
             <li>Use your userscript manager action <code>myfyp: Upload Snapshot</code>.</li>

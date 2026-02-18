@@ -36,9 +36,6 @@ def test_root_route_renders_installation_page() -> None:
     assert "https://myfyp.link/myfyp.user.js" in response.body
     assert "https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-firefox-latest.xpi" in response.body
     assert 'href="https://www.tampermonkey.net/"' in response.body
-    assert 'href="https://violentmonkey.github.io/get-it/"' in response.body
-    assert 'href="https://www.greasespot.net/"' in response.body
-    assert 'href="https://addons.mozilla.org/firefox/addon/firemonkey/"' in response.body
     assert 'href="/privacy"' in response.body
 
 

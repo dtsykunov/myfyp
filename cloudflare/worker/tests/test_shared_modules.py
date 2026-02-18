@@ -237,7 +237,4 @@ def test_shared_rendering_helper_branches() -> None:
     assert 'href="/"' in home_rendered
     assert 'href="https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-firefox-latest.xpi"' in home_rendered
     assert 'href="https://www.tampermonkey.net/"' in home_rendered
-    assert 'href="https://violentmonkey.github.io/get-it/"' in home_rendered
-    assert 'href="https://www.greasespot.net/"' in home_rendered
-    assert 'href="https://addons.mozilla.org/firefox/addon/firemonkey/"' in home_rendered
     assert 'href="/privacy"' in home_rendered
