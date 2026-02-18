@@ -48,4 +48,4 @@ Workflow input:
 
 Workflow output:
 - uploads signed `.xpi` and build artifacts
-- publishes signed `.xpi` to GitHub Release tag `firefox-signed-latest`
+- publishes signed `.xpi` to GitHub Release tag `extensions-latest`

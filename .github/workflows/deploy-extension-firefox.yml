@@ -56,7 +56,7 @@ jobs:
       - name: Publish signed XPI to GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: firefox-signed-latest
+          tag_name: extensions-latest
           name: myfyp Firefox signed extension (latest)
           body: |
             Rolling release of signed Firefox extension artifacts.
