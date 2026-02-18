@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 import html
+import json
+from urllib.parse import urlsplit, urlunsplit
 
 from for_us_api.formatting import (
     format_compact_views as _format_compact_views,
@@ -14,15 +16,55 @@ from for_us_api.models import RecommendationItem, StoredSnapshot
 
 def render_home_html(userscript_url: str) -> str:
     escaped_userscript_url = html.escape(userscript_url)
+    parsed_userscript_url = urlsplit(userscript_url)
+    home_url = "/"
+    if parsed_userscript_url.scheme and parsed_userscript_url.netloc:
+        home_url = urlunsplit((parsed_userscript_url.scheme, parsed_userscript_url.netloc, "/", "", ""))
+    schema_home_url = home_url if home_url.startswith("http") else "https://myfyp.link/"
+    seo_description = (
+        "myfyp lets you capture and share a personal YouTube recommendation page snapshot "
+        "with a temporary link."
+    )
+    structured_data = json.dumps(
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "myfyp",
+            "url": schema_home_url,
+            "description": seo_description,
+            "creator": {
+                "@type": "Person",
+                "name": "dtsykunov",
+                "url": "https://dtsykunov.com/",
+            },
+        },
+        separators=(",", ":"),
+    )
+    escaped_home_url = html.escape(home_url)
+    escaped_seo_description = html.escape(seo_description)
     return f"""<!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{escaped_seo_description}">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <meta name="theme-color" content="#0f0f0f">
+    <meta name="application-name" content="myfyp">
+    <link rel="canonical" href="{escaped_home_url}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="myfyp">
+    <meta property="og:title" content="myfyp by dtsykunov">
+    <meta property="og:description" content="{escaped_seo_description}">
+    <meta property="og:url" content="{escaped_home_url}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="myfyp by dtsykunov">
+    <meta name="twitter:description" content="{escaped_seo_description}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
-    <title>myfyp by dtsykunov</title>
+    <title>myfyp by dtsykunov | Personal YouTube recommendation snapshots</title>
+    <script type="application/ld+json">{structured_data}</script>
     <style>
       :root {{
         --bg: #0f0f0f;
@@ -258,6 +300,27 @@ def render_home_html(userscript_url: str) -> str:
         text-align: center;
       }}
 
+      .faq {{
+        margin-top: 14px;
+        padding: 20px;
+      }}
+
+      .faq-title {{
+        margin: 0 0 10px;
+        font-size: 18px;
+      }}
+
+      .faq-list {{
+        margin: 0;
+        padding-left: 20px;
+        color: #d0d0d0;
+        line-height: 1.6;
+      }}
+
+      .faq-list li {{
+        margin-bottom: 8px;
+      }}
+
       .privacy-link {{
         color: var(--accent);
         font-size: 13px;
@@ -326,6 +389,15 @@ def render_home_html(userscript_url: str) -> str:
             <code>window.myfyp.setApiBaseUrl("http://127.0.0.1:8000")</code>.
           </p>
         </article>
+      </section>
+
+      <section class="card faq">
+        <h2 class="faq-title">FAQ</h2>
+        <ol class="faq-list">
+          <li><strong>What is myfyp?</strong> It is a tool to share a temporary snapshot of one person's YouTube homepage recommendations.</li>
+          <li><strong>How long is data stored?</strong> Snapshots automatically expire after 7 days, and each upload includes a remove link for immediate deletion.</li>
+          <li><strong>What does the userscript send?</strong> It sends parsed recommendation cards and metadata required to render the shared page.</li>
+        </ol>
       </section>
 
       <footer class="privacy-footer">
