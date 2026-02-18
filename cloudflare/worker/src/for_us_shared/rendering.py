@@ -498,6 +498,13 @@ def render_privacy_html() -> str:
         line-height: 1.25;
       }
 
+      h3 {
+        margin: 18px 0 8px;
+        font-size: 16px;
+        line-height: 1.35;
+        color: #e4e4e4;
+      }
+
       p {
         margin: 0 0 14px;
         line-height: 1.65;
@@ -541,12 +548,26 @@ def render_privacy_html() -> str:
 
       <section class="notice">
         <h2>Privacy Notice</h2>
-        <p>myfyp stores only the minimum snapshot data required to render a shared personal YouTube recommendation page.</p>
-        <p>The stored data can include recommendation identifiers, parsed metadata, snapshot creation time, and basic technical request metadata needed for service reliability and abuse prevention.</p>
+        <p>This notice explains how myfyp processes personal data when creating and viewing shared YouTube recommendation snapshots.</p>
+
+        <h3>Controller and Contact</h3>
+        <p>Controller contact: <a class="contact-link" href="mailto:le7edea36@mozmail.com">le7edea36@mozmail.com</a>.</p>
+
+        <h3>Data We Process</h3>
+        <p>myfyp processes only the minimum data required to render shared snapshot pages. This can include recommendation identifiers, parsed metadata, snapshot timestamps, and technical request metadata needed for security and abuse prevention.</p>
+
+        <h3>Purpose and Legal Basis (GDPR Art. 6)</h3>
+        <p>Data is processed only to provide the snapshot sharing service, maintain reliability, and prevent abuse. The legal basis is legitimate interest in operating a secure, functioning public service.</p>
+
+        <h3>Retention and Deletion</h3>
         <p>Snapshots are automatically deleted after 7 days.</p>
-        <p>Each created snapshot includes a private remove link that can delete the snapshot immediately.</p>
-        <p>Data is used only to store and render shared snapshot pages. It is not sold and is not used for advertising.</p>
-        <p>Contact: <a class="contact-link" href="mailto:le7edea36@mozmail.com">le7edea36@mozmail.com</a></p>
+        <p>Each snapshot includes a private remove link that can delete the data immediately.</p>
+
+        <h3>Data Sharing</h3>
+        <p>Data is not sold and is not used for advertising. Data is disclosed only when required for hosting, infrastructure operation, or legal compliance.</p>
+
+        <h3>Your Rights (GDPR)</h3>
+        <p>You may request access, rectification, erasure, restriction, or objection regarding personal data processed by this service. You may also contact the controller to raise privacy concerns.</p>
       </section>
 
       <p class="muted">Last updated: February 18, 2026</p>
