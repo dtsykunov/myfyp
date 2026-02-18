@@ -13,6 +13,7 @@ services:
       - ./api/scripts:/app/scripts
       - ./api/pyproject.toml:/app/pyproject.toml:ro
       - ./extension/userscript:/app/extension/userscript:ro
+      - ./brand/icons/web:/app/brand/icons/web:ro
 
   api-test:
     build:

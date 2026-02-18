@@ -152,7 +152,6 @@ def render_home_html(userscript_url: str) -> str:
 
       .brand-logo img {{
         width: 29px;
-        height: 20px;
         display: block;
       }}
 
@@ -499,7 +498,6 @@ def render_privacy_html() -> str:
 
       .brand-logo img {
         width: 29px;
-        height: 20px;
         display: block;
       }
 
@@ -690,7 +688,6 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
 
       .brand-logo img {{
         width: 29px;
-        height: 20px;
         display: block;
       }}
 

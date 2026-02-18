@@ -14,6 +14,7 @@ COPY api/src ./src
 COPY api/tests ./tests
 COPY api/scripts ./scripts
 COPY extension/userscript ./extension/userscript
+COPY brand/icons/web ./brand/icons/web
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e ".[dev]" \
