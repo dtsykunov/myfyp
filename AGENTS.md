@@ -52,6 +52,10 @@ This file defines working rules for AI agents and human contributors in this rep
    - Add tests for new behavior and critical branches, not only happy paths.
    - Maintain strict coverage thresholds in test commands and CI, and raise them when practical.
    - Treat coverage regressions as failures unless explicitly approved by the user.
+11. Follow semantic versioning for versioned artifacts:
+   - Use SemVer (`MAJOR.MINOR.PATCH`) for project/versioned deliverables.
+   - Bump version strings whenever a commit changes behavior, APIs, packaging, or distributed extension artifacts.
+   - Ensure all relevant version declarations stay in sync for the affected component(s) before commit.
 
 ## Task Execution Protocol (Required)
 
