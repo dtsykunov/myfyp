@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://myfyp.link
-// @version      0.1.15
+// @version      0.1.16
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
@@ -64,15 +64,6 @@
 
   function isDebugEnabled() {
     return pageWindow.localStorage.getItem(DEBUG_STORAGE_KEY) === "1";
-  }
-
-  function escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
   }
 
   function extractVideoHashFromHref(href, baseUrl) {
@@ -628,97 +619,15 @@
     setLinkHistory(deduplicatedHistory);
   }
 
-  function renderLinkHistoryHtml(entries) {
-    const rows = entries
-      .map((entry, index) => {
-        const createdAt = entry.createdAt
-          ? new Date(entry.createdAt).toLocaleString()
-          : "Unknown time";
-        const hashLine = entry.hash ? `<div class="hash">Hash: <code>${escapeHtml(entry.hash)}</code></div>` : "";
-        const shareLine = entry.shareUrl
-          ? `<div><span class="label">Share:</span> <a href="${escapeHtml(entry.shareUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(entry.shareUrl)}</a></div>`
-          : "";
-        const removeLine = entry.removeUrl
-          ? `<div><span class="label">Remove:</span> <a href="${escapeHtml(entry.removeUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(entry.removeUrl)}</a></div>`
-          : "";
-        return `
-          <li class="item">
-            <div class="title">#${index + 1} • ${escapeHtml(createdAt)}</div>
-            ${hashLine}
-            ${shareLine}
-            ${removeLine}
-          </li>
-        `;
-      })
-      .join("");
-
-    return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>${APP_NAME} link history</title>
-    <style>
-      body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #0f0f0f;
-        color: #f1f1f1;
-      }
-      main {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      h1 {
-        margin: 0 0 8px;
-        font-size: 24px;
-      }
-      p {
-        color: #bbbbbb;
-        margin: 0 0 18px;
-      }
-      ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        gap: 10px;
-      }
-      .item {
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        border-radius: 10px;
-        padding: 12px;
-        background: #1a1a1a;
-      }
-      .title {
-        font-weight: 700;
-        margin-bottom: 6px;
-      }
-      .hash {
-        margin-bottom: 6px;
-        color: #b6b6b6;
-      }
-      .label {
-        color: #b6b6b6;
-      }
-      a {
-        color: #8ab4ff;
-        word-break: break-all;
-      }
-      code {
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <h1>${APP_NAME} link history</h1>
-      <p>Total snapshots: ${entries.length}</p>
-      <ul>${rows}</ul>
-    </main>
-  </body>
-</html>`;
+  function formatHistoryTimestamp(isoString) {
+    if (!isoString) {
+      return "Unknown time";
+    }
+    const parsedDate = new Date(isoString);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "Unknown time";
+    }
+    return parsedDate.toLocaleString();
   }
 
   function showLinkHistory() {
@@ -731,19 +640,31 @@
       });
       return;
     }
-    const historyWindow = pageWindow.open("", "_blank");
-    if (!historyWindow) {
-      console.info(`[${APP_NAME}] Link history:`, history);
-      showToast({
-        title: `${APP_NAME}`,
-        message: "Popup blocked. Opened link history in browser console.",
-        variant: "error",
-      });
-      return;
+    const links = [];
+    for (const [index, entry] of history.entries()) {
+      const createdAt = formatHistoryTimestamp(entry.createdAt);
+      const prefix = `#${index + 1} • ${createdAt}`;
+      if (entry.shareUrl) {
+        links.push({
+          label: `${prefix} • Share`,
+          url: entry.shareUrl,
+        });
+      }
+      if (entry.removeUrl) {
+        links.push({
+          label: `${prefix} • Remove`,
+          url: entry.removeUrl,
+        });
+      }
     }
-    historyWindow.document.open();
-    historyWindow.document.write(renderLinkHistoryHtml(history));
-    historyWindow.document.close();
+    showToast({
+      title: `${APP_NAME} link history`,
+      message: `Saved snapshots: ${history.length}`,
+      links,
+      durationMs: 90000,
+      maxWidth: "640px",
+      maxHeight: "75vh",
+    });
   }
 
   function removeToast() {
@@ -761,7 +682,7 @@
     toast.style.position = "fixed";
     toast.style.top = "16px";
     toast.style.right = "16px";
-    toast.style.maxWidth = "420px";
+    toast.style.maxWidth = options.maxWidth || "420px";
     toast.style.padding = "12px 14px";
     toast.style.borderRadius = "10px";
     toast.style.background = options.variant === "error" ? "rgba(168, 51, 51, 0.95)" : "rgba(26, 26, 26, 0.95)";
@@ -771,6 +692,10 @@
     toast.style.zIndex = "2147483647";
     toast.style.boxShadow = "0 8px 24px rgba(0,0,0,0.35)";
     toast.style.border = "1px solid rgba(255,255,255,0.12)";
+    if (options.maxHeight) {
+      toast.style.maxHeight = options.maxHeight;
+      toast.style.overflowY = "auto";
+    }
 
     const title = document.createElement("div");
     title.textContent = options.title;
