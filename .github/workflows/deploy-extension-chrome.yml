@@ -23,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Build Chrome extension package
         run: ./extension/chrome/scripts/build.sh
