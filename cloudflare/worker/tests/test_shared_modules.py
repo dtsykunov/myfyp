@@ -235,4 +235,9 @@ def test_shared_rendering_helper_branches() -> None:
     assert 'href="/favicon.svg"' in home_rendered
     assert '<img src="/favicon.svg" alt="">' in home_rendered
     assert 'href="/"' in home_rendered
+    assert 'href="https://github.com/dtsykunov/myfyp/releases/tag/extensions-latest"' in home_rendered
+    assert 'href="https://www.tampermonkey.net/"' in home_rendered
+    assert 'href="https://violentmonkey.github.io/get-it/"' in home_rendered
+    assert 'href="https://www.greasespot.net/"' in home_rendered
+    assert 'href="https://addons.mozilla.org/firefox/addon/firemonkey/"' in home_rendered
     assert 'href="/privacy"' in home_rendered

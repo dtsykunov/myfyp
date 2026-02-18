@@ -16,6 +16,8 @@ from for_us_api.models import RecommendationItem, StoredSnapshot
 
 def render_home_html(userscript_url: str) -> str:
     escaped_userscript_url = html.escape(userscript_url)
+    firefox_extension_url = "https://github.com/dtsykunov/myfyp/releases/tag/extensions-latest"
+    escaped_firefox_extension_url = html.escape(firefox_extension_url)
     parsed_userscript_url = urlsplit(userscript_url)
     home_url = "/"
     if parsed_userscript_url.scheme and parsed_userscript_url.netloc:
@@ -270,6 +272,12 @@ def render_home_html(userscript_url: str) -> str:
         line-height: 1.3;
       }}
 
+      .install-subtitle {{
+        margin: 14px 0 8px;
+        font-size: 15px;
+        color: #e5e5e5;
+      }}
+
       .steps {{
         margin: 0;
         padding-left: 22px;
@@ -391,6 +399,7 @@ def render_home_html(userscript_url: str) -> str:
           Each snapshot has a 7-day lifetime and includes a private remove link for immediate deletion.
         </p>
         <div class="hero-actions">
+          <a class="button-link button-muted" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">Download Firefox Extension</a>
           <a class="button-link button-primary userscript-link" href="{escaped_userscript_url}">Install myfyp.user.js</a>
           <a class="button-link button-muted" href="/privacy">Review Privacy Notice</a>
         </div>
@@ -399,11 +408,18 @@ def render_home_html(userscript_url: str) -> str:
       <section class="layout">
         <article class="card install-card">
           <h2 class="section-title">Install and Use</h2>
+          <h3 class="install-subtitle">Option 1: Firefox Extension</h3>
           <ol class="steps">
-            <li>Install Tampermonkey (or another userscript manager).</li>
+            <li>Download the signed Firefox extension package from <a class="userscript-link" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">GitHub Releases</a>.</li>
+            <li>In Firefox, open <code>about:addons</code> and choose <code>Install Add-on From File...</code>.</li>
+            <li>Open <code>https://www.youtube.com/</code>, open the extension popup, then click <code>Upload Snapshot</code>.</li>
+          </ol>
+          <h3 class="install-subtitle">Option 2: Userscript</h3>
+          <ol class="steps">
+            <li>Install a userscript manager: <a class="userscript-link" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a>, <a class="userscript-link" href="https://violentmonkey.github.io/get-it/" target="_blank" rel="noopener noreferrer">Violentmonkey</a>, <a class="userscript-link" href="https://www.greasespot.net/" target="_blank" rel="noopener noreferrer">Greasemonkey</a>, or <a class="userscript-link" href="https://addons.mozilla.org/firefox/addon/firemonkey/" target="_blank" rel="noopener noreferrer">FireMonkey</a>.</li>
             <li>Open and install the userscript: <a class="userscript-link" href="{escaped_userscript_url}">{escaped_userscript_url}</a>.</li>
             <li>Open <code>https://www.youtube.com/</code>.</li>
-            <li>Use Tampermonkey menu action <code>myfyp: Upload Snapshot</code>.</li>
+            <li>Use your userscript manager action <code>myfyp: Upload Snapshot</code>.</li>
             <li>Open the returned share link to view the rendered snapshot.</li>
           </ol>
         </article>
