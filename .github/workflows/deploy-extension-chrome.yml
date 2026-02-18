@@ -1,71 +1,58 @@
-name: Deploy Chrome Extension
+name: Release Browser Extensions
 
 on:
   push:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: deploy-chrome-extension
+  group: release-browser-extensions
   cancel-in-progress: false
 
 jobs:
-  chrome-extension-build:
+  release-browser-extensions:
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build extension package
+      - name: Build Chrome extension package
         run: ./extension/chrome/scripts/build.sh
 
-      - name: Upload extension artifact
+      - name: Build Firefox extension package
+        run: ./extension/firefox/scripts/build.sh
+
+      - name: Upload extension build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: myfyp-chrome-extension
+          name: myfyp-browser-extensions
           path: |
             dist/extensions/chrome/*.zip
             dist/extensions/chrome/*.sha256
+            dist/extensions/firefox/*.zip
+            dist/extensions/firefox/*.sha256
 
-  deploy-chrome-extension:
-    runs-on: ubuntu-latest
-    needs:
-      - chrome-extension-build
-    if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
-    environment: production
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Publish GitHub release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: extensions-latest
+          name: myfyp browser extensions (latest)
+          body: |
+            Rolling release of unpacked extension build artifacts for manual installation.
 
-      - name: Validate Chrome Web Store secrets
-        shell: bash
-        env:
-          CHROME_WEBSTORE_CLIENT_ID: ${{ secrets.CHROME_WEBSTORE_CLIENT_ID }}
-          CHROME_WEBSTORE_CLIENT_SECRET: ${{ secrets.CHROME_WEBSTORE_CLIENT_SECRET }}
-          CHROME_WEBSTORE_REFRESH_TOKEN: ${{ secrets.CHROME_WEBSTORE_REFRESH_TOKEN }}
-          CHROME_WEBSTORE_EXTENSION_ID: ${{ vars.CHROME_WEBSTORE_EXTENSION_ID }}
-        run: |
-          set -euo pipefail
-          required=(
-            CHROME_WEBSTORE_CLIENT_ID
-            CHROME_WEBSTORE_CLIENT_SECRET
-            CHROME_WEBSTORE_REFRESH_TOKEN
-            CHROME_WEBSTORE_EXTENSION_ID
-          )
-          for key in "${required[@]}"; do
-            if [ -z "${!key:-}" ]; then
-              echo "Missing required deployment value: ${key}" >&2
-              exit 1
-            fi
-          done
+            Included in this release:
+            - Chrome extension package
+            - Firefox extension package
 
-      - name: Deploy extension to Chrome Web Store
-        env:
-          CHROME_WEBSTORE_CLIENT_ID: ${{ secrets.CHROME_WEBSTORE_CLIENT_ID }}
-          CHROME_WEBSTORE_CLIENT_SECRET: ${{ secrets.CHROME_WEBSTORE_CLIENT_SECRET }}
-          CHROME_WEBSTORE_REFRESH_TOKEN: ${{ secrets.CHROME_WEBSTORE_REFRESH_TOKEN }}
-          CHROME_WEBSTORE_EXTENSION_ID: ${{ vars.CHROME_WEBSTORE_EXTENSION_ID }}
-          CHROME_WEBSTORE_PUBLISH_TARGET: ${{ vars.CHROME_WEBSTORE_PUBLISH_TARGET }}
-        run: ./extension/chrome/scripts/deploy.sh
+            Commit: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          files: |
+            dist/extensions/chrome/*.zip
+            dist/extensions/chrome/*.sha256
+            dist/extensions/firefox/*.zip
+            dist/extensions/firefox/*.sha256
