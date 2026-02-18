@@ -3,6 +3,77 @@ const DEFAULT_API_BASE_URL = "https://myfyp.link";
 const API_BASE_URL_STORAGE_KEY = "myfyp.apiBaseUrl";
 
 const MENU_UPLOAD = "myfyp-upload";
+const ACTION_CONTEXT = "browser_action";
+
+function getRuntimeErrorMessage() {
+  const runtimeError = chrome.runtime && chrome.runtime.lastError;
+  return runtimeError && runtimeError.message ? runtimeError.message : "";
+}
+
+function storageGet(keys) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get(keys, (items) => {
+      const errorMessage = getRuntimeErrorMessage();
+      if (errorMessage) {
+        reject(new Error(errorMessage));
+        return;
+      }
+      resolve(items || {});
+    });
+  });
+}
+
+function storageSet(items) {
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.set(items, () => {
+      const errorMessage = getRuntimeErrorMessage();
+      if (errorMessage) {
+        reject(new Error(errorMessage));
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
+function queryTabs(queryInfo) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.query(queryInfo, (tabs) => {
+      const errorMessage = getRuntimeErrorMessage();
+      if (errorMessage) {
+        reject(new Error(errorMessage));
+        return;
+      }
+      resolve(Array.isArray(tabs) ? tabs : []);
+    });
+  });
+}
+
+function sendMessageToTab(tabId, payload) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tabId, payload, (response) => {
+      const errorMessage = getRuntimeErrorMessage();
+      if (errorMessage) {
+        reject(new Error(errorMessage));
+        return;
+      }
+      resolve(response);
+    });
+  });
+}
+
+function removeAllContextMenus() {
+  return new Promise((resolve, reject) => {
+    chrome.contextMenus.removeAll(() => {
+      const errorMessage = getRuntimeErrorMessage();
+      if (errorMessage) {
+        reject(new Error(errorMessage));
+        return;
+      }
+      resolve();
+    });
+  });
+}
 
 function normalizeApiBaseUrl(value) {
   return String(value || "").trim().replace(/\/+$/, "");
@@ -40,7 +111,7 @@ function extractApiErrorDetail(bodyText) {
 }
 
 async function getApiBaseUrl() {
-  const stored = await chrome.storage.local.get([API_BASE_URL_STORAGE_KEY]);
+  const stored = await storageGet([API_BASE_URL_STORAGE_KEY]);
   const fromStorage = normalizeApiBaseUrl(stored[API_BASE_URL_STORAGE_KEY]);
   return fromStorage || DEFAULT_API_BASE_URL;
 }
@@ -50,7 +121,7 @@ async function setApiBaseUrl(apiBaseUrl) {
   if (!normalized) {
     throw new Error("API base URL cannot be empty.");
   }
-  await chrome.storage.local.set({ [API_BASE_URL_STORAGE_KEY]: normalized });
+  await storageSet({ [API_BASE_URL_STORAGE_KEY]: normalized });
   return normalized;
 }
 
@@ -103,13 +174,14 @@ async function postSnapshot(snapshot, apiBaseUrl) {
 }
 
 async function executeInActiveTab(command, args = null) {
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tabs = await queryTabs({ active: true, currentWindow: true });
+  const activeTab = Array.isArray(tabs) && tabs.length > 0 ? tabs[0] : null;
   if (!activeTab || typeof activeTab.id !== "number") {
     return { ok: false, error: "No active tab found." };
   }
 
   try {
-    const result = await chrome.tabs.sendMessage(activeTab.id, {
+    const result = await sendMessageToTab(activeTab.id, {
       type: "myfyp.command",
       command,
       args
@@ -132,11 +204,11 @@ async function executeInActiveTab(command, args = null) {
 }
 
 async function createContextMenus() {
-  await chrome.contextMenus.removeAll();
+  await removeAllContextMenus();
   chrome.contextMenus.create({
     id: MENU_UPLOAD,
     title: "myfyp: Upload Snapshot",
-    contexts: ["action"]
+    contexts: [ACTION_CONTEXT]
   });
 }
 

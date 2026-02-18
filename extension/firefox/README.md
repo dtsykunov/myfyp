@@ -1,6 +1,6 @@
 # myfyp Firefox Extension
 
-Firefox WebExtension (Manifest V3) that mirrors the userscript behavior:
+Firefox WebExtension that mirrors the userscript behavior:
 
 - Manual snapshot upload from YouTube home page.
 - No automatic upload on page load.

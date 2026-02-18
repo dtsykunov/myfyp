@@ -1,8 +1,8 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "myfyp",
   "description": "Share your personal YouTube recommendation page snapshot.",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "homepage_url": "https://myfyp.link",
   "browser_specific_settings": {
     "gecko": {
@@ -10,19 +10,19 @@
       "strict_min_version": "128.0"
     }
   },
-  "action": {
+  "browser_action": {
     "default_title": "myfyp",
     "default_popup": "popup/popup.html"
   },
   "background": {
-    "service_worker": "background/service_worker.js"
+    "scripts": [
+      "background/service_worker.js"
+    ]
   },
   "permissions": [
     "storage",
     "tabs",
-    "contextMenus"
-  ],
-  "host_permissions": [
+    "contextMenus",
     "https://www.youtube.com/*",
     "https://m.youtube.com/*",
     "https://myfyp.link/*",
