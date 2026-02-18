@@ -30,6 +30,12 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
+[tool.coverage.run]
+omit = ["src/for_us_api/rendering.py"]
+
+[tool.coverage.report]
+omit = ["src/for_us_api/rendering.py"]
+
 [tool.pyright]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"

@@ -413,14 +413,14 @@ def render_home_html(userscript_url: str) -> str:
           <h2 class="section-title">Install and Use</h2>
           <h3 class="install-subtitle">Option 1: Firefox Extension</h3>
           <ol class="steps">
-            <li>Open the stable <a class="userscript-link" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">install link</a>: <a class="userscript-link" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">{escaped_firefox_extension_url}</a>.</li>
+            <li>Open the stable <a class="userscript-link" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">install link</a>.</li>
             <li>Confirm the Firefox install prompt.</li>
             <li>Open <a class="userscript-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube Home</a>, open the extension popup, and click <code>Upload Snapshot</code>.</li>
           </ol>
           <h3 class="install-subtitle">Option 2: Userscript</h3>
           <ol class="steps">
             <li>Install <a class="userscript-link" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a> (or another userscript manager).</li>
-            <li>Open and install <a class="userscript-link" href="{escaped_userscript_url}">the userscript</a>: <a class="userscript-link" href="{escaped_userscript_url}">{escaped_userscript_url}</a>.</li>
+            <li>Open and install <a class="userscript-link" href="{escaped_userscript_url}">the userscript</a>.</li>
             <li>Open <a class="userscript-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube Home</a>.</li>
             <li>Use your userscript manager action <code>myfyp: Upload Snapshot</code>.</li>
             <li>Open the returned share link to view the rendered snapshot.</li>
