@@ -1,15 +1,18 @@
 // ==UserScript==
-// @name         For Us Page (MVP Scaffold)
+// @name         myfyp
 // @namespace    https://myfyp.link
-// @version      0.1.19
-// @description  MVP scaffold for sharing YouTube recommendation pages
-// @match        https://www.youtube.com/*
+// @version      0.1.20
+// @description  Share your personal YouTube recommendation page snapshot
+// @match        https://www.youtube.com/
+// @match        https://m.youtube.com/
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @grant        GM_registerMenuCommand
 // @downloadURL  https://myfyp.link/myfyp.user.js
 // @updateURL    https://myfyp.link/myfyp.user.js
-// @connect      *
+// @connect      myfyp.link
+// @connect      localhost
+// @connect      127.0.0.1
 // ==/UserScript==
 
 (function () {
