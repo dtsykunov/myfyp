@@ -22,7 +22,7 @@ def render_home_html(userscript_url: str) -> str:
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
-    <title>myfyp (my for you page) by dtsykunov</title>
+    <title>myfyp by dtsykunov</title>
     <style>
       :root {{
         --bg: #0f0f0f;
@@ -160,7 +160,7 @@ def render_home_html(userscript_url: str) -> str:
           </svg>
           </span>
         </a>
-        <h1>myfyp (my for you page) by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+        <h1>myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
       <div class="meta-stack">
         <p class="page-description">Share a personal YouTube recommendation page snapshot with a temporary link.</p>
@@ -299,7 +299,7 @@ def render_privacy_html() -> str:
             </svg>
           </span>
         </a>
-        <h1 class="brand-title">myfyp (my for you page) by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+        <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
       <h2>Privacy Notice</h2>
       <p>This service stores a temporary snapshot of a user's YouTube recommendations so it can be shared by link.</p>
@@ -343,7 +343,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
-    <title>myfyp (my for you page) by dtsykunov - {escaped_hash}</title>
+    <title>myfyp by dtsykunov - {escaped_hash}</title>
     <style>
       :root {{
         --bg: #0f0f0f;
@@ -762,7 +762,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
           </svg>
           </span>
         </a>
-        <h1>myfyp (my for you page) by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+        <h1>myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
       <div class="meta-stack">
         <p class="page-description">Snapshot of a personal YouTube recommendations page captured at a specific moment in time.</p>

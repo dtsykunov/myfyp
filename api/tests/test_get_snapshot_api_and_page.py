@@ -95,7 +95,7 @@ def test_render_snapshot_page_contains_video_and_short_links(tmp_path: Path) -> 
         page_response = client.get(f"/{snapshot_hash}")
 
     assert page_response.status_code == 200
-    assert "myfyp (my for you page) by" in page_response.text
+    assert "myfyp by" in page_response.text
     assert 'href="https://dtsykunov.com/"' in page_response.text
     assert "Taken at: <code>2026-02-17 11:00:00 UTC</code>" in page_response.text
     assert "https://www.youtube.com/watch?v=lzChIIJMpGk" in page_response.text
@@ -197,7 +197,7 @@ def test_root_page_includes_installation_instructions(tmp_path: Path) -> None:
         response = client.get("/")
 
     assert response.status_code == 200
-    assert "myfyp (my for you page) by" in response.text
+    assert "myfyp by" in response.text
     assert "Install and Use" in response.text
     assert 'href="/"' in response.text
     assert 'href="http://testserver/myfyp.user.js"' in response.text
