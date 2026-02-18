@@ -1,4 +1,4 @@
-name: Release Browser Extensions
+name: Release Chrome Extension
 
 on:
   push:
@@ -8,11 +8,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-browser-extensions
+  group: release-chrome-extension
   cancel-in-progress: false
 
 jobs:
-  release-browser-extensions:
+  release-chrome-extension:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
     steps:
@@ -22,30 +22,24 @@ jobs:
       - name: Build Chrome extension package
         run: ./extension/chrome/scripts/build.sh
 
-      - name: Build Firefox extension package
-        run: ./extension/firefox/scripts/build.sh
-
       - name: Upload extension build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: myfyp-browser-extensions
+          name: myfyp-chrome-extension
           path: |
             dist/extensions/chrome/*.zip
             dist/extensions/chrome/*.sha256
-            dist/extensions/firefox/*.zip
-            dist/extensions/firefox/*.sha256
 
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: extensions-latest
-          name: myfyp browser extensions (latest)
+          name: myfyp chrome extension (latest)
           body: |
-            Rolling release of unpacked extension build artifacts for manual installation.
+            Rolling release of unpacked Chrome extension build artifacts for manual installation.
 
             Included in this release:
             - Chrome extension package
-            - Firefox extension package
 
             Commit: ${{ github.sha }}
           prerelease: true
@@ -54,5 +48,3 @@ jobs:
           files: |
             dist/extensions/chrome/*.zip
             dist/extensions/chrome/*.sha256
-            dist/extensions/firefox/*.zip
-            dist/extensions/firefox/*.sha256
