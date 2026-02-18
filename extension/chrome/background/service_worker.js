@@ -3,6 +3,8 @@ const DEFAULT_API_BASE_URL = "https://myfyp.link";
 const API_BASE_URL_STORAGE_KEY = "myfyp.apiBaseUrl";
 
 const MENU_UPLOAD = "myfyp-upload";
+const HOME_PAGE_REQUIRED_ERROR =
+  "myfyp works only on YouTube Home. Open https://www.youtube.com/ or https://m.youtube.com/ and stay on the homepage (/).";
 
 function normalizeApiBaseUrl(value) {
   return String(value || "").trim().replace(/\/+$/, "");
@@ -107,6 +109,9 @@ async function executeInActiveTab(command, args = null) {
   if (!activeTab || typeof activeTab.id !== "number") {
     return { ok: false, error: "No active tab found." };
   }
+  if (!isSupportedYoutubeHomeUrl(activeTab.url)) {
+    return { ok: false, error: HOME_PAGE_REQUIRED_ERROR };
+  }
 
   try {
     const result = await chrome.tabs.sendMessage(activeTab.id, {
@@ -122,6 +127,9 @@ async function executeInActiveTab(command, args = null) {
     }
     return result;
   } catch (error) {
+    if (isReceivingEndMissingError(error)) {
+      return { ok: false, error: HOME_PAGE_REQUIRED_ERROR };
+    }
     return {
       ok: false,
       error: `Unable to reach YouTube page: ${
@@ -129,6 +137,29 @@ async function executeInActiveTab(command, args = null) {
       }`
     };
   }
+}
+
+function isSupportedYoutubeHomeUrl(rawUrl) {
+  if (typeof rawUrl !== "string" || !rawUrl.trim()) {
+    return false;
+  }
+  try {
+    const parsedUrl = new URL(rawUrl);
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (hostname !== "www.youtube.com" && hostname !== "m.youtube.com") {
+      return false;
+    }
+    return parsedUrl.pathname === "/";
+  } catch {
+    return false;
+  }
+}
+
+function isReceivingEndMissingError(error) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return /receiving end does not exist/i.test(error.message);
 }
 
 async function createContextMenus() {
