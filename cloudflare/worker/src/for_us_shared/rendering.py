@@ -26,8 +26,13 @@ def render_home_html(userscript_url: str) -> str:
     <style>
       :root {{
         --bg: #0f0f0f;
+        --bg-soft: #181818;
+        --card: #1b1b1b;
         --text: #f1f1f1;
         --muted: #aaaaaa;
+        --line: rgba(255, 255, 255, 0.12);
+        --line-soft: rgba(255, 255, 255, 0.08);
+        --accent: #8ab4ff;
       }}
 
       * {{
@@ -38,20 +43,33 @@ def render_home_html(userscript_url: str) -> str:
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font-family: Arial, sans-serif;
+        font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+        min-height: 100vh;
+      }}
+
+      body::before {{
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(1200px 420px at 16% -12%, rgba(138, 180, 255, 0.16), transparent 60%),
+          radial-gradient(900px 360px at 88% -18%, rgba(44, 156, 211, 0.14), transparent 60%);
       }}
 
       main {{
-        max-width: 1100px;
+        max-width: 1080px;
         margin: 0 auto;
-        padding: 20px;
+        padding: 28px 20px 24px;
+        position: relative;
+        z-index: 1;
       }}
 
       .top-header {{
         display: flex;
         align-items: center;
         gap: 12px;
-        margin: 0 0 12px;
+        margin: 0 0 22px;
       }}
 
       .brand-logo {{
@@ -70,9 +88,10 @@ def render_home_html(userscript_url: str) -> str:
         display: block;
       }}
 
-      h1 {{
+      .brand-title {{
         margin: 0;
-        font-size: 28px;
+        font-size: clamp(24px, 3vw, 32px);
+        line-height: 1.2;
       }}
 
       .title-link {{
@@ -86,38 +105,152 @@ def render_home_html(userscript_url: str) -> str:
         text-rendering: optimizeLegibility;
       }}
 
-      .page-description {{
-        margin: 0 0 10px;
-        color: #c6c6c6;
-        font-size: 14px;
-        line-height: 1.45;
+      .card {{
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, #1b1b1b 0%, #171717 100%);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
       }}
 
-      .card {{
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 14px;
-        padding: 18px;
-        background: #181818;
+      .hero {{
+        padding: 22px;
+        margin-bottom: 16px;
+      }}
+
+      .eyebrow {{
+        margin: 0 0 8px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }}
+
+      .hero-title {{
+        margin: 0;
+        font-size: clamp(22px, 3vw, 30px);
+        line-height: 1.25;
+      }}
+
+      .hero-description {{
+        margin: 12px 0 0;
+        color: #d0d0d0;
+        line-height: 1.55;
+        max-width: 760px;
+      }}
+
+      .hero-actions {{
+        margin-top: 16px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }}
+
+      .button-link {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        text-decoration: none;
+        font-size: 14px;
+        padding: 8px 14px;
+      }}
+
+      .button-primary {{
+        background: #222;
+        color: var(--text);
+      }}
+
+      .button-primary:hover {{
+        border-color: rgba(255, 255, 255, 0.24);
+      }}
+
+      .button-muted {{
+        background: transparent;
+        color: #c8c8c8;
+      }}
+
+      .button-muted:hover {{
+        border-color: rgba(255, 255, 255, 0.24);
+      }}
+
+      .layout {{
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+      }}
+
+      .install-card {{
+        grid-column: span 7;
+        padding: 20px;
+      }}
+
+      .console-card {{
+        grid-column: span 5;
+        padding: 20px;
       }}
 
       .section-title {{
         margin: 0 0 12px;
-        font-size: 20px;
+        font-size: 21px;
+        line-height: 1.3;
       }}
 
       .steps {{
         margin: 0;
-        padding-left: 20px;
-        line-height: 1.6;
+        padding-left: 22px;
+        color: #d6d6d6;
+        line-height: 1.65;
+      }}
+
+      .steps li {{
+        margin-bottom: 8px;
       }}
 
       .steps code {{
         font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid var(--line-soft);
+        border-radius: 7px;
+        padding: 1px 6px;
       }}
 
       .userscript-link {{
-        color: #8ab4ff;
-        word-break: break-all;
+        color: var(--accent);
+        word-break: break-word;
+      }}
+
+      .console-title {{
+        margin: 0 0 8px;
+        font-size: 16px;
+      }}
+
+      .console-description {{
+        margin: 0;
+        color: #cdcdcd;
+        line-height: 1.55;
+      }}
+
+      .code-block {{
+        margin-top: 12px;
+        border: 1px solid var(--line-soft);
+        border-radius: 12px;
+        background: #121212;
+        color: #e2e2e2;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        padding: 12px 14px;
+        overflow-x: auto;
+        white-space: nowrap;
+      }}
+
+      .note {{
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
       }}
 
       .privacy-footer {{
@@ -126,13 +259,20 @@ def render_home_html(userscript_url: str) -> str:
       }}
 
       .privacy-link {{
-        color: #8ab4ff;
+        color: var(--accent);
         font-size: 13px;
         text-decoration: none;
       }}
 
       .privacy-link:hover {{
         text-decoration: underline;
+      }}
+
+      @media (max-width: 960px) {{
+        .install-card,
+        .console-card {{
+          grid-column: span 12;
+        }}
       }}
     </style>
   </head>
@@ -147,19 +287,47 @@ def render_home_html(userscript_url: str) -> str:
           </svg>
           </span>
         </a>
-        <h1>myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+        <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
-      <p class="page-description">Share a personal YouTube recommendation page snapshot with a temporary link.</p>
-      <section class="card">
-        <h2 class="section-title">Install and Use</h2>
-        <ol class="steps">
-          <li>Install Tampermonkey (or another userscript manager).</li>
-          <li>Open and install the userscript: <a class="userscript-link" href="{escaped_userscript_url}">{escaped_userscript_url}</a>.</li>
-          <li>Open <code>https://www.youtube.com/</code>.</li>
-          <li>From Tampermonkey menu, run <code>myfyp: Upload Snapshot</code>, or run <code>window.myfyp.uploadLatestSnapshot()</code> in browser console.</li>
-          <li>Open the returned snapshot link to view the rendered page.</li>
-        </ol>
+
+      <section class="card hero">
+        <p class="eyebrow">Personal YouTube recommendation snapshots</p>
+        <h2 class="hero-title">Capture your current home feed and share it with a temporary link.</h2>
+        <p class="hero-description">
+          myfyp stores only the parsed recommendation snapshot needed to render a share page.
+          Each snapshot has a 7-day lifetime and includes a private remove link for immediate deletion.
+        </p>
+        <div class="hero-actions">
+          <a class="button-link button-primary userscript-link" href="{escaped_userscript_url}">Install myfyp.user.js</a>
+          <a class="button-link button-muted" href="/privacy">Review Privacy Notice</a>
+        </div>
       </section>
+
+      <section class="layout">
+        <article class="card install-card">
+          <h2 class="section-title">Install and Use</h2>
+          <ol class="steps">
+            <li>Install Tampermonkey (or another userscript manager).</li>
+            <li>Open and install the userscript: <a class="userscript-link" href="{escaped_userscript_url}">{escaped_userscript_url}</a>.</li>
+            <li>Open <code>https://www.youtube.com/</code>.</li>
+            <li>Use Tampermonkey menu action <code>myfyp: Upload Snapshot</code>.</li>
+            <li>Open the returned share link to view the rendered snapshot.</li>
+          </ol>
+        </article>
+        <article class="card console-card">
+          <h3 class="console-title">Console Alternative</h3>
+          <p class="console-description">
+            You can trigger uploads manually from DevTools if you prefer a keyboard workflow.
+          </p>
+          <div class="code-block">window.myfyp.uploadLatestSnapshot()</div>
+          <div class="code-block">window.myfyp.showLinkHistory()</div>
+          <p class="note">
+            Advanced: set a custom API endpoint via
+            <code>window.myfyp.setApiBaseUrl("http://127.0.0.1:8000")</code>.
+          </p>
+        </article>
+      </section>
+
       <footer class="privacy-footer">
         <a class="privacy-link" href="/privacy">Privacy Notice</a>
       </footer>
@@ -182,8 +350,13 @@ def render_privacy_html() -> str:
     <style>
       :root {
         --bg: #0f0f0f;
+        --bg-soft: #181818;
+        --card: #1b1b1b;
         --text: #f1f1f1;
         --muted: #aaaaaa;
+        --line: rgba(255, 255, 255, 0.12);
+        --line-soft: rgba(255, 255, 255, 0.08);
+        --accent: #8ab4ff;
       }
 
       * {
@@ -194,20 +367,33 @@ def render_privacy_html() -> str:
         margin: 0;
         background: var(--bg);
         color: var(--text);
-        font-family: Arial, sans-serif;
+        font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+        min-height: 100vh;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background:
+          radial-gradient(1200px 420px at 16% -12%, rgba(138, 180, 255, 0.16), transparent 60%),
+          radial-gradient(900px 360px at 88% -18%, rgba(44, 156, 211, 0.14), transparent 60%);
       }
 
       main {
-        max-width: 900px;
+        max-width: 980px;
         margin: 0 auto;
-        padding: 20px;
+        padding: 28px 20px 24px;
+        position: relative;
+        z-index: 1;
       }
 
       .top-header {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin: 0 0 12px;
+        margin: 0 0 20px;
       }
 
       .brand-logo {
@@ -227,8 +413,9 @@ def render_privacy_html() -> str:
       }
 
       .brand-title {
-        margin: 0 0 16px;
-        font-size: 28px;
+        margin: 0;
+        font-size: clamp(24px, 3vw, 32px);
+        line-height: 1.2;
       }
 
       .title-link {
@@ -242,9 +429,53 @@ def render_privacy_html() -> str:
         text-rendering: optimizeLegibility;
       }
 
-      h2 {
-        margin: 22px 0 8px;
-        font-size: 20px;
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: linear-gradient(180deg, #1b1b1b 0%, #171717 100%);
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+      }
+
+      .intro {
+        padding: 22px;
+        margin-bottom: 14px;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .section-title {
+        margin: 0;
+        font-size: clamp(22px, 3vw, 30px);
+        line-height: 1.25;
+      }
+
+      .intro p {
+        margin: 12px 0 0;
+        color: #d0d0d0;
+        line-height: 1.55;
+        max-width: 760px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .card {
+        padding: 18px;
+      }
+
+      .card h2 {
+        margin: 0 0 8px;
+        font-size: 19px;
+        line-height: 1.35;
       }
 
       p, li {
@@ -252,24 +483,40 @@ def render_privacy_html() -> str:
         line-height: 1.55;
       }
 
+      ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      li {
+        margin-bottom: 8px;
+      }
+
       .muted {
-        color: var(--muted);
+        margin-top: 12px;
+        color: #9f9f9f;
         font-size: 13px;
       }
 
       .privacy-footer {
-        margin-top: 22px;
+        margin-top: 18px;
         text-align: center;
       }
 
       .privacy-link {
-        color: #8ab4ff;
+        color: var(--accent);
         font-size: 13px;
         text-decoration: none;
       }
 
       .privacy-link:hover {
         text-decoration: underline;
+      }
+
+      @media (max-width: 860px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -286,25 +533,46 @@ def render_privacy_html() -> str:
         </a>
         <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
       </header>
-      <h2>Privacy Notice</h2>
-      <p>This service stores a temporary snapshot of a user's YouTube recommendations so it can be shared by link.</p>
 
-      <h2>What Data Is Stored</h2>
-      <ul>
-        <li>Video and Shorts identifiers and parsed metadata submitted by the userscript.</li>
-        <li>Snapshot creation timestamp and optional source page URL.</li>
-      </ul>
+      <section class="panel intro">
+        <p class="eyebrow">Privacy Notice</p>
+        <h2 class="section-title">Minimal data, temporary storage, explicit control.</h2>
+        <p>
+          myfyp stores only the recommendation snapshot submitted by the userscript so a share page can be rendered.
+          The snapshot is temporary and can be removed at any time with the private remove link.
+        </p>
+      </section>
 
-      <h2>Retention</h2>
-      <p>Snapshots are automatically deleted after 7 days.</p>
+      <section class="grid">
+        <article class="panel card">
+          <h2>What Data Is Stored</h2>
+          <ul>
+            <li>Video and Shorts identifiers and parsed metadata submitted by the userscript.</li>
+            <li>Snapshot creation timestamp and optional source page URL.</li>
+            <li>Technical request metadata needed for abuse prevention and availability.</li>
+          </ul>
+        </article>
+        <article class="panel card">
+          <h2>Retention and Deletion</h2>
+          <p>Snapshots are automatically deleted after 7 days.</p>
+          <p>Each created snapshot includes a private remove link that can immediately delete it.</p>
+        </article>
+        <article class="panel card">
+          <h2>Purpose and Scope</h2>
+          <p>
+            Data is processed only to store and render shared snapshot pages.
+            It is not used for advertising, profiling, or resale.
+          </p>
+        </article>
+        <article class="panel card">
+          <h2>Operational Controls</h2>
+          <p>
+            The service enforces request-size limits, rate limits, and quotas to reduce abuse and preserve reliability.
+          </p>
+        </article>
+      </section>
 
-      <h2>Removal</h2>
-      <p>Each created snapshot includes a private remove link that can immediately delete it.</p>
-
-      <h2>Purpose</h2>
-      <p>Data is used only to render the shared snapshot page and is not used for advertising.</p>
-
-      <p class="muted">Last updated: February 17, 2026</p>
+      <p class="muted">Last updated: February 18, 2026</p>
       <footer class="privacy-footer">
         <a class="privacy-link" href="/privacy">Privacy Notice</a>
       </footer>
