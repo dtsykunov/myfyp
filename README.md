@@ -1,130 +1,176 @@
-# For Us Page
+# myfyp (For Us Page)
 
-`For Us Page` is a web service for sharing your current YouTube recommendations through a temporary link.
+`myfyp` lets you capture your current YouTube home recommendations and share them as a temporary link.
 
-## Purpose
+The project has three isolated parts:
+- a userscript (browser-side parser/uploader)
+- an API (FastAPI + SQLite for local/dev)
+- a Cloudflare Worker target (Python + D1 for production)
 
-YouTube recommendations are personal and constantly changing.  
-This project lets a user capture their current YouTube home feed and share it with someone else as a simple URL.
+## What It Does
 
-## User Flow
+1. You open YouTube home.
+2. You trigger upload manually from Tampermonkey (`For Us Page: Upload Snapshot`) or console.
+3. The userscript parses recommendation cards and sends a JSON payload to the API.
+4. The API stores the snapshot for 7 days and returns:
+   - share URL
+   - remove URL
+5. Anyone with the share link can open a rendered snapshot page.
 
-1. Install the browser extension.
-2. Open YouTube.
-3. Click `Share Recommendation Page` in the extension.
-4. The extension generates a share link: `https://<domain>/<hash>`.
-5. Anyone with that link can open a rendered page of the captured recommendations.
+## Current Status
 
-## System Flow (Under the Hood)
+- Userscript parsing is implemented.
+- API storage and rendering are implemented.
+- Remove-by-token endpoint is implemented.
+- Privacy page is implemented.
+- Cloudflare Worker + D1 deployment path is implemented.
 
-1. The extension parses the user's YouTube home page.
-2. It builds a JSON payload containing recommended video links (and related metadata, if available).
-3. The payload is sent to the backend API.
-4. The API stores the payload in SQLite and returns a unique `hash`.
-5. A request to `/<hash>` retrieves the stored payload and renders it as a plain HTML page.
+## Quick Start (Local)
 
-## Data Retention
+1. Enter dev shell:
+```bash
+nix develop
+```
 
-- Share links are temporary.
-- Stored recommendation data expires after **7 days**.
-- Expired records are deleted.
+2. Run API:
+```bash
+cd api
+./scripts/run-api.sh
+```
 
-## Tech Stack
+3. Install userscript in Tampermonkey from:
+`http://127.0.0.1:8000/myfyp.user.js`
 
-- **Backend API:** Python + FastAPI
-- **Database:** SQLite
-- **Rendered page:** Plain HTML
-- **MVP browser component:** Userscript (initial scaffold)
+4. Open:
+`https://www.youtube.com/`
 
-## Repository Layout
+5. Trigger upload:
+- Tampermonkey menu: `For Us Page: Upload Snapshot`
+- or console: `window.forUsPage.uploadLatestSnapshot()`
 
-- `extension/`: browser-side MVP userscript scaffold.
-- `api/`: Python/FastAPI service scaffold with tests.
-- `cloudflare/worker/`: Cloudflare Python Worker + D1 adapter.
-- `flake.nix`: Nix flake dev shell for local reproducible runs.
-- `.github/workflows/ci.yml`: CI that runs API tests via Docker.
-- `docker-compose.yml`: local container workflow for run/test parity.
+## Data Model
 
-## Current Scaffold Status
-
-- Extension:
-  - Userscript shell exists (`extension/userscript/myfyp.user.js`).
-  - YouTube parsing + API upload behavior are TODO.
-- API:
-  - FastAPI app scaffold exists with `GET /health`.
-  - Typed request/response/domain models are defined for snapshot payloads.
-  - `POST /api/snapshots` stores payload in SQLite and returns share hash + expiry.
-  - `GET /api/snapshots/{hash}` retrieves stored payload.
-  - `GET /{hash}` renders a basic server-side HTML page for sharing.
-  - Abuse controls are enabled (payload size/list limits, rate limits, write quota, expired cleanup).
-  - Pyproject-based packaging, lint, strict type-checking, and pytest setup are configured.
-  - Baseline tests validate API boot and model validation rules.
-
-## API Create Snapshot (Implemented)
-
-`POST /api/snapshots`
-
-Example request body:
+`POST /api/snapshots` accepts:
 
 ```json
 {
-  "capturedAt": "2026-02-17T11:00:00Z",
+  "capturedAt": "2026-02-18T09:26:21Z",
   "pageUrl": "https://www.youtube.com/",
-  "videos": ["lzChIIJMpGk"],
-  "shorts": ["dQw4w9WgXcQ"]
+  "videos": [
+    {
+      "videoHash": "lzChIIJMpGk",
+      "title": "deadlock: items for idiot",
+      "channelName": "chalant",
+      "channelLink": "https://www.youtube.com/@itschalant",
+      "channelAvatar": "https://yt3.ggpht.com/example=s68-c-k-c0x00ffffff-no-rj",
+      "viewCount": 81000,
+      "publishedAt": "2026-02-15T09:26:21Z"
+    }
+  ],
+  "shorts": [
+    {
+      "videoHash": "1rInJtz8QWg",
+      "title": "DEAD DADS | Dan Soder",
+      "viewCount": 32000
+    }
+  ]
 }
 ```
 
-Example response:
+Compatibility note: `videos` and `shorts` also accept hash-only entries (`["abc123..."]`), which are normalized server-side.
+
+Create response example:
 
 ```json
 {
   "hash": "Ab12Cd34Ef56",
-  "expiresAt": "2026-02-24T11:00:00Z"
+  "expiresAt": "2026-02-25T09:26:21Z",
+  "removeToken": "token-value",
+  "url": "https://myfyp.link/Ab12Cd34Ef56",
+  "removeUrl": "https://myfyp.link/api/snapshots/Ab12Cd34Ef56/remove/token-value"
 }
 ```
 
-`GET /api/snapshots/{hash}` returns the stored payload JSON.
+## HTTP Endpoints
 
-`GET /{hash}` returns a minimal rendered HTML page listing videos and shorts.
+- `GET /health` - health check.
+- `GET /myfyp.user.js` - serves the userscript.
+- `GET /` - home page with install/usage instructions.
+- `GET /privacy` - privacy notice.
+- `POST /api/snapshots` - create snapshot.
+- `GET /api/snapshots/{hash}` - get stored payload JSON.
+- `GET /{hash}` - render snapshot HTML.
+- `GET /api/snapshots/{hash}/remove/{removeToken}` - delete snapshot by token.
 
-Default abuse-control limits:
+## Retention and Abuse Controls
 
-- Max `videos`: 200
-- Max `shorts`: 200
-- Max request body for `POST /api/snapshots`: 64 KB
-- Create rate limit: 10/min per IP
-- Read rate limit: 120/min per IP
-- Create daily quota: 200/day per IP
+- Snapshot retention: 7 days.
+- Expired snapshots are deleted automatically.
 
-## Run and Test
+Default limits:
+- max `videos`: 200
+- max `shorts`: 200
+- max request body: 64 KB
+- create rate limit: 10/min/IP
+- read rate limit: 120/min/IP
+- create quota: 200/day/IP
 
-### Local (Nix Flake)
+## Userscript Notes
 
+- Match scope is homepage-only:
+  - `https://www.youtube.com/`
+  - `https://m.youtube.com/`
+- Upload is manual only (no auto-upload on page load).
+- Ads are filtered out during parsing.
+- Script keeps local history of created share/remove links (`localStorage`).
+
+Console API:
+- `window.forUsPage.uploadLatestSnapshot()`
+- `window.forUsPage.showLinkHistory()`
+- `window.forUsPage.getLinkHistory()`
+- `window.forUsPage.setApiBaseUrl("http://127.0.0.1:8000")`
+- `window.forUsPage.getApiBaseUrl()`
+
+## Repository Layout
+
+- `extension/userscript/myfyp.user.js` - Tampermonkey userscript.
+- `api/` - FastAPI + SQLite implementation.
+- `cloudflare/worker/` - Python Worker + D1 adapter.
+- `docker-compose.yml` - containerized lint/typecheck/test/run.
+- `flake.nix` - local reproducible dev shell.
+- `.github/workflows/ci.yml` - Docker-based quality checks.
+- `.github/workflows/deploy-worker.yml` - Worker deploy + D1 migrations.
+
+## Development Commands
+
+Local (Nix):
 ```bash
-nix develop --command sh -c "cd api && ./scripts/run-tests.sh"
 nix develop --command sh -c "cd api && ./scripts/run-lint.sh"
 nix develop --command sh -c "cd api && ./scripts/run-typecheck.sh"
+nix develop --command sh -c "cd api && ./scripts/run-tests.sh"
 nix develop --command sh -c "cd api && ./scripts/run-api.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-lint.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-typecheck.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-tests.sh"
 ```
 
-### CI Path / Container Path (Docker)
-
+CI-aligned (Docker):
 ```bash
 docker compose run --rm api-lint
 docker compose run --rm api-typecheck
 docker compose run --rm api-test
-docker compose up api
 docker compose run --rm worker-lint
 docker compose run --rm worker-typecheck
 docker compose run --rm worker-test
+docker compose up api
 ```
 
-## Notes for Contributors / AI Agents
+## Production Deployment (Cloudflare)
 
-- Primary goal: fast, simple sharing of a YouTube recommendation snapshot.
-- Architecture is intentionally minimal: extension -> API -> SQLite -> HTML page.
-- Privacy/retention behavior (7-day expiration) is a core product rule and should be preserved.
+`Deploy Worker` workflow:
+- runs worker lint/type/tests
+- applies D1 migrations
+- deploys worker using `pywrangler`
+
+Required GitHub environment configuration is documented in:
+`cloudflare/worker/README.md`
