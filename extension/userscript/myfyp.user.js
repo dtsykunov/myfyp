@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://myfyp.link
-// @version      0.1.16
+// @version      0.1.17
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
@@ -630,8 +630,115 @@
     return parsedDate.toLocaleString();
   }
 
+  function historyTimestampMs(isoString) {
+    if (!isoString) {
+      return 0;
+    }
+    const parsedMs = new Date(isoString).getTime();
+    return Number.isFinite(parsedMs) ? parsedMs : 0;
+  }
+
+  function getSortedLinkHistory() {
+    return getLinkHistory()
+      .slice()
+      .sort((left, right) => historyTimestampMs(right.createdAt) - historyTimestampMs(left.createdAt));
+  }
+
+  function showLinkHistoryToast(entries) {
+    removeToast();
+
+    const toast = document.createElement("div");
+    toast.id = TOAST_ID;
+    toast.style.position = "fixed";
+    toast.style.top = "16px";
+    toast.style.right = "16px";
+    toast.style.maxWidth = "700px";
+    toast.style.maxHeight = "75vh";
+    toast.style.overflowY = "auto";
+    toast.style.padding = "12px 14px";
+    toast.style.borderRadius = "10px";
+    toast.style.background = "rgba(26, 26, 26, 0.95)";
+    toast.style.color = "#fff";
+    toast.style.fontSize = "13px";
+    toast.style.lineHeight = "1.35";
+    toast.style.zIndex = "2147483647";
+    toast.style.boxShadow = "0 8px 24px rgba(0,0,0,0.35)";
+    toast.style.border = "1px solid rgba(255,255,255,0.12)";
+
+    const title = document.createElement("div");
+    title.textContent = `${APP_NAME} link history`;
+    title.style.fontWeight = "700";
+    title.style.marginBottom = "6px";
+    toast.appendChild(title);
+
+    const subtitle = document.createElement("div");
+    subtitle.textContent = `Saved snapshots: ${entries.length}`;
+    subtitle.style.color = "rgba(255,255,255,0.82)";
+    toast.appendChild(subtitle);
+
+    const list = document.createElement("div");
+    list.style.marginTop = "10px";
+    list.style.display = "grid";
+    list.style.gap = "8px";
+
+    const totalEntries = entries.length;
+    for (const [index, entry] of entries.entries()) {
+      const line = document.createElement("div");
+      const position = totalEntries - index;
+      const createdAt = formatHistoryTimestamp(entry.createdAt);
+      line.append(document.createTextNode(`#${position} • ${createdAt} • `));
+
+      if (entry.shareUrl) {
+        const shareLink = document.createElement("a");
+        shareLink.href = entry.shareUrl;
+        shareLink.textContent = "Share";
+        shareLink.target = "_blank";
+        shareLink.rel = "noopener noreferrer";
+        shareLink.style.color = "#8ab4ff";
+        shareLink.style.textDecoration = "none";
+        line.appendChild(shareLink);
+      } else {
+        line.append(document.createTextNode("Share"));
+      }
+
+      line.append(document.createTextNode(" • "));
+
+      if (entry.removeUrl) {
+        const deleteLink = document.createElement("a");
+        deleteLink.href = entry.removeUrl;
+        deleteLink.textContent = "Delete";
+        deleteLink.target = "_blank";
+        deleteLink.rel = "noopener noreferrer";
+        deleteLink.style.color = "#8ab4ff";
+        deleteLink.style.textDecoration = "none";
+        line.appendChild(deleteLink);
+      } else {
+        line.append(document.createTextNode("Delete"));
+      }
+
+      line.append(document.createTextNode(" • Remove from list"));
+      list.appendChild(line);
+    }
+    toast.appendChild(list);
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.textContent = "Close";
+    closeButton.style.marginTop = "10px";
+    closeButton.style.padding = "4px 8px";
+    closeButton.style.border = "1px solid rgba(255,255,255,0.2)";
+    closeButton.style.borderRadius = "6px";
+    closeButton.style.background = "transparent";
+    closeButton.style.color = "#fff";
+    closeButton.style.cursor = "pointer";
+    closeButton.addEventListener("click", removeToast);
+    toast.appendChild(closeButton);
+
+    document.body.appendChild(toast);
+  }
+
   function showLinkHistory() {
-    const history = getLinkHistory();
+    const history = getSortedLinkHistory();
     if (history.length === 0) {
       showToast({
         title: `${APP_NAME}`,
@@ -640,31 +747,7 @@
       });
       return;
     }
-    const links = [];
-    for (const [index, entry] of history.entries()) {
-      const createdAt = formatHistoryTimestamp(entry.createdAt);
-      const prefix = `#${index + 1} • ${createdAt}`;
-      if (entry.shareUrl) {
-        links.push({
-          label: `${prefix} • Share`,
-          url: entry.shareUrl,
-        });
-      }
-      if (entry.removeUrl) {
-        links.push({
-          label: `${prefix} • Remove`,
-          url: entry.removeUrl,
-        });
-      }
-    }
-    showToast({
-      title: `${APP_NAME} link history`,
-      message: `Saved snapshots: ${history.length}`,
-      links,
-      durationMs: 90000,
-      maxWidth: "640px",
-      maxHeight: "75vh",
-    });
+    showLinkHistoryToast(history);
   }
 
   function removeToast() {
