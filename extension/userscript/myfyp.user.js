@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         For Us Page (MVP Scaffold)
 // @namespace    https://myfyp.link
-// @version      0.1.17
+// @version      0.1.18
 // @description  MVP scaffold for sharing YouTube recommendation pages
 // @match        https://www.youtube.com/*
 // @grant        GM_xmlhttpRequest
@@ -619,6 +619,21 @@
     setLinkHistory(deduplicatedHistory);
   }
 
+  function isSameLinkHistoryEntry(left, right) {
+    return (
+      left.createdAt === right.createdAt
+      && left.shareUrl === right.shareUrl
+      && left.removeUrl === right.removeUrl
+      && left.hash === right.hash
+    );
+  }
+
+  function removeLinkHistoryEntry(entryToRemove) {
+    const history = getLinkHistory();
+    const filteredHistory = history.filter((entry) => !isSameLinkHistoryEntry(entry, entryToRemove));
+    setLinkHistory(filteredHistory);
+  }
+
   function formatHistoryTimestamp(isoString) {
     if (!isoString) {
       return "Unknown time";
@@ -716,7 +731,22 @@
         line.append(document.createTextNode("Delete"));
       }
 
-      line.append(document.createTextNode(" • Remove from list"));
+      line.append(document.createTextNode(" • "));
+      const removeFromListButton = document.createElement("button");
+      removeFromListButton.type = "button";
+      removeFromListButton.textContent = "Remove from list";
+      removeFromListButton.style.padding = "0";
+      removeFromListButton.style.border = "none";
+      removeFromListButton.style.background = "transparent";
+      removeFromListButton.style.color = "#8ab4ff";
+      removeFromListButton.style.cursor = "pointer";
+      removeFromListButton.style.fontSize = "13px";
+      removeFromListButton.style.lineHeight = "1.35";
+      removeFromListButton.addEventListener("click", () => {
+        removeLinkHistoryEntry(entry);
+        showLinkHistory();
+      });
+      line.appendChild(removeFromListButton);
       list.appendChild(line);
     }
     toast.appendChild(list);
