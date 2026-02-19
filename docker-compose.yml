@@ -1,40 +1,18 @@
 services:
-  api:
+  worker:
     build:
       context: .
-      dockerfile: api/Dockerfile
-    image: for-us-api:dev
-    command: ./scripts/run-api.sh
+      dockerfile: cloudflare/worker/Dockerfile
+    image: for-us-worker:dev
+    command: ./cloudflare/worker/scripts/run-dev.sh
     ports:
-      - "8000:8000"
+      - "8787:8787"
     volumes:
-      - ./api/src:/app/src
-      - ./api/tests:/app/tests
-      - ./api/scripts:/app/scripts
-      - ./api/pyproject.toml:/app/pyproject.toml:ro
-      - ./extension/userscript:/app/extension/userscript:ro
-      - ./brand/icons/web:/app/brand/icons/web:ro
-
-  api-test:
-    build:
-      context: .
-      dockerfile: api/Dockerfile
-    image: for-us-api:dev
-    command: ./scripts/run-tests.sh
-
-  api-lint:
-    build:
-      context: .
-      dockerfile: api/Dockerfile
-    image: for-us-api:dev
-    command: ./scripts/run-lint.sh
-
-  api-typecheck:
-    build:
-      context: .
-      dockerfile: api/Dockerfile
-    image: for-us-api:dev
-    command: ./scripts/run-typecheck.sh
+      - ./cloudflare/worker/src:/app/cloudflare/worker/src
+      - ./cloudflare/worker/scripts:/app/cloudflare/worker/scripts
+      - ./cloudflare/worker/wrangler.toml:/app/cloudflare/worker/wrangler.toml:ro
+      - ./cloudflare/worker/migrations:/app/cloudflare/worker/migrations:ro
+      - ./.wrangler:/app/.wrangler
 
   worker-test:
     build:

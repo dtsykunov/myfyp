@@ -21,12 +21,10 @@
           pkgs = import nixpkgs { inherit system; };
           python = pkgs.python313.withPackages (
             ps: with ps; [
-              fastapi
-              httpx
+              pydantic
               pytest
               pytest-cov
               ruff
-              uvicorn
             ]
           );
         in
@@ -39,13 +37,14 @@
               pkgs.docker
               pkgs.docker-compose
               pkgs.zip
+              pkgs.uv
             ];
 
             shellHook = ''
               repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-              export PYTHONPATH="$repo_root/api/src${PYTHONPATH:+:$PYTHONPATH}"
+              export PYTHONPATH="$repo_root/cloudflare/worker/src${PYTHONPATH:+:$PYTHONPATH}"
               echo "myfyp dev shell loaded."
-              echo "Run: cd api && ./scripts/run-tests.sh"
+              echo "Run: ./cloudflare/worker/scripts/run-tests.sh"
             '';
           };
         }

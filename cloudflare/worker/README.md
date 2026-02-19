@@ -1,8 +1,6 @@
 # Cloudflare Worker (Python)
 
 This Worker target contains a deployable shared runtime package in `src/for_us_shared`.
-That shared runtime is also imported by the local FastAPI target in `api/` to avoid
-duplicating rendering and backend utility logic.
 
 Shared runtime modules:
 - Pydantic payload models (`for_us_shared.models`)
@@ -22,6 +20,14 @@ Adapter-specific code in this folder:
 nix develop --command sh -c "./cloudflare/worker/scripts/run-lint.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-typecheck.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-tests.sh"
+```
+
+## Local dev server
+
+Run the Worker locally on `http://127.0.0.1:8787`:
+
+```bash
+nix develop --command sh -c "./cloudflare/worker/scripts/run-dev.sh"
 ```
 
 ## D1 migrations

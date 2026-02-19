@@ -14,9 +14,12 @@ COPY cloudflare/worker/src ./cloudflare/worker/src
 COPY cloudflare/worker/tests ./cloudflare/worker/tests
 COPY cloudflare/worker/scripts ./cloudflare/worker/scripts
 COPY cloudflare/worker/pyrightconfig.json ./cloudflare/worker/pyrightconfig.json
+COPY cloudflare/worker/wrangler.toml ./cloudflare/worker/wrangler.toml
+COPY cloudflare/worker/migrations ./cloudflare/worker/migrations
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e "./cloudflare/worker[dev]" \
+    && pip install --no-cache-dir workers-py \
     && chmod +x ./cloudflare/worker/scripts/*.sh
 
 ENV PYTHONPATH=/app/cloudflare/worker/src

@@ -2,20 +2,16 @@
 
 `myfyp` lets you capture your current YouTube home recommendations and share them as a temporary link.
 
-The project has three isolated parts:
-- a userscript (browser-side parser/uploader)
-- an API (FastAPI + SQLite for local/dev)
-- a Cloudflare Worker target (Python + D1 for production)
-
-Backend rendering and formatting are shared between API and Worker via
-`cloudflare/worker/src/for_us_shared`.
+The project has two isolated parts:
+- a userscript/browser extension (browser-side parser/uploader)
+- a Python Cloudflare Worker (API + HTML rendering + D1 persistence)
 
 ## What It Does
 
-1. You open YouTube home.
-2. You trigger upload manually from Tampermonkey (`myfyp: Upload Snapshot`) or console.
-3. The userscript parses recommendation cards and sends a JSON payload to the API.
-4. The API stores the snapshot for 7 days and returns:
+1. You open YouTube Home.
+2. You trigger upload manually from the userscript or extension UI.
+3. The client parses recommendation cards and sends a JSON payload to the Worker API.
+4. The Worker stores the snapshot for 7 days and returns:
    - share URL
    - remove URL
 5. Anyone with the share link can open a rendered snapshot page.
@@ -23,11 +19,11 @@ Backend rendering and formatting are shared between API and Worker via
 ## Current Status
 
 - Userscript parsing is implemented.
-- API storage and rendering are implemented.
+- Browser extensions are implemented (Chrome + Firefox packages).
+- Worker storage and rendering are implemented.
 - Remove-by-token endpoint is implemented.
 - Privacy page is implemented.
 - Cloudflare Worker + D1 deployment path is implemented.
-- HTML rendering source of truth is shared (`for_us_shared.rendering`) for API + Worker.
 
 ## Quick Start (Local)
 
@@ -36,10 +32,9 @@ Backend rendering and formatting are shared between API and Worker via
 nix develop
 ```
 
-2. Run API:
+2. Run local Worker server:
 ```bash
-cd api
-./scripts/run-api.sh
+./cloudflare/worker/scripts/run-dev.sh
 ```
 
 3. Install userscript in Tampermonkey from:
@@ -48,8 +43,13 @@ cd api
 4. Open:
 `https://www.youtube.com/`
 
-5. Trigger upload:
-- Tampermonkey menu: `myfyp: Upload Snapshot`
+5. Point userscript to local Worker once:
+```js
+window.myfyp.setApiBaseUrl("http://127.0.0.1:8787")
+```
+
+6. Trigger upload:
+- userscript menu: `myfyp: Upload Snapshot`
 - or console: `window.myfyp.uploadLatestSnapshot()`
 
 ## Data Model
@@ -131,20 +131,21 @@ Console API:
 - `window.myfyp.uploadLatestSnapshot()`
 - `window.myfyp.showLinkHistory()`
 - `window.myfyp.getLinkHistory()`
-- `window.myfyp.setApiBaseUrl("http://127.0.0.1:8000")`
+- `window.myfyp.setApiBaseUrl("http://127.0.0.1:8787")`
 - `window.myfyp.getApiBaseUrl()`
 
 ## Repository Layout
 
 - `extension/userscript/myfyp.user.js` - Tampermonkey userscript.
-- `api/` - FastAPI + SQLite implementation.
-- `cloudflare/worker/` - Python Worker + D1 adapter.
+- `extension/chrome/` - Chrome extension source/build scripts.
+- `extension/firefox/` - Firefox extension source/build scripts.
+- `cloudflare/worker/` - Python Worker + D1 implementation.
 - `cloudflare/worker/src/for_us_shared/` - shared backend runtime (models, abuse helpers, formatting, rendering).
 - `brand/logo-mark.svg` - master square logo source.
 - `brand/icons/web/` - website favicon assets (`png`, `svg`, `ico`).
 - `extension/chrome/icons/` - Chrome extension icons.
 - `extension/firefox/icons/` - Firefox extension icons.
-- `docker-compose.yml` - containerized lint/typecheck/test/run.
+- `docker-compose.yml` - containerized worker lint/typecheck/test/dev server.
 - `flake.nix` - local reproducible dev shell.
 - `.github/workflows/ci.yml` - Docker-based quality checks.
 - `.github/workflows/deploy-worker.yml` - Worker deploy + D1 migrations.
@@ -156,27 +157,18 @@ Image binaries are tracked with Git LFS.
 
 Local (Nix):
 ```bash
-nix develop --command sh -c "cd api && ./scripts/run-lint.sh"
-nix develop --command sh -c "cd api && ./scripts/run-typecheck.sh"
-nix develop --command sh -c "cd api && ./scripts/run-tests.sh"
-nix develop --command sh -c "cd api && ./scripts/run-api.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-lint.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-typecheck.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-tests.sh"
+nix develop --command sh -c "./cloudflare/worker/scripts/run-dev.sh"
 ```
-
-Note: API scripts set `PYTHONPATH` automatically so they can import shared modules from
-`cloudflare/worker/src/for_us_shared`.
 
 CI-aligned (Docker):
 ```bash
-docker compose run --rm api-lint
-docker compose run --rm api-typecheck
-docker compose run --rm api-test
 docker compose run --rm worker-lint
 docker compose run --rm worker-typecheck
 docker compose run --rm worker-test
-docker compose up api
+docker compose up worker
 ```
 
 ## Production Deployment (Cloudflare)

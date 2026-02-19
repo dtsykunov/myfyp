@@ -436,7 +436,7 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
           <div class="code-block">window.myfyp.showLinkHistory()</div>
           <p class="note">
             Advanced: set a custom API endpoint via
-            <code>window.myfyp.setApiBaseUrl("http://127.0.0.1:8000")</code>.
+            <code>window.myfyp.setApiBaseUrl("http://127.0.0.1:8787")</code>.
           </p>
         </article>
       </section>

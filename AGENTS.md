@@ -12,11 +12,11 @@ This file defines working rules for AI agents and human contributors in this rep
   3. Recipient opens the link and sees the captured recommendations.
 - System flow:
   1. Extension parses YouTube homepage recommendations and creates a JSON payload.
-  2. API stores payload in SQLite and returns a unique `hash`.
+  2. Worker API stores payload in D1 and returns a unique `hash`.
   3. Frontend route `/<hash>` fetches payload and renders plain HTML.
 - Data retention rule: recommendation snapshots expire after 7 days and must be deleted.
-- Current stack: browser extension + Python/FastAPI API + SQLite + plain HTML frontend.
-- Architectural intent: minimal pipeline (`extension -> API -> SQLite -> HTML render`).
+- Current stack: browser extension + Python Cloudflare Worker + D1 + plain HTML frontend.
+- Architectural intent: minimal pipeline (`extension -> worker API -> D1 -> HTML render`).
 
 ## Engineering Rules
 

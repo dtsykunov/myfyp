@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  api-quality:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,20 +20,8 @@ jobs:
         with:
           lfs: true
 
-      - name: Build API image
-        run: docker compose build api-test
-
       - name: Build Worker image
         run: docker compose build worker-test
-
-      - name: Run API lint in container
-        run: docker compose run --rm api-lint
-
-      - name: Run API type checks in container
-        run: docker compose run --rm api-typecheck
-
-      - name: Run API tests in container
-        run: docker compose run --rm api-test
 
       - name: Run Worker lint in container
         run: docker compose run --rm worker-lint
