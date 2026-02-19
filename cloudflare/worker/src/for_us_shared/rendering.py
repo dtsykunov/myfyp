@@ -812,6 +812,8 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
       .video-card {{
         width: 365px;
         min-height: 305px;
+        content-visibility: auto;
+        contain-intrinsic-size: 365px 305px;
         background: var(--card);
         border-radius: 14px;
         overflow: hidden;
@@ -832,6 +834,8 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
       .short-card {{
         width: 365px;
         min-height: 547px;
+        content-visibility: auto;
+        contain-intrinsic-size: 365px 547px;
         background: var(--card);
         border-radius: 14px;
         overflow: hidden;
