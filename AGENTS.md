@@ -60,6 +60,11 @@ This file defines working rules for AI agents and human contributors in this rep
    - Review impacted README files after every change.
    - Update README content in the same change set when behavior, setup, usage, architecture, workflows, or UI changes.
    - Do not leave stale instructions or examples.
+13. Use MCP servers proactively and fully:
+   - Use Context7 MCP by default for library/API documentation, code generation, setup steps, and configuration guidance, even when the user does not explicitly request it.
+   - Use GitHub MCP by default for repository, issue, pull request, release, and workflow operations when it can improve correctness or execution speed.
+   - Utilize the full relevant capabilities of available MCP servers instead of partial/manual fallbacks when access is available.
+   - If an MCP action fails due to permissions, report exactly which capability is blocked and what access must be added so the user can grant it.
 
 ## Task Execution Protocol (Required)
 
