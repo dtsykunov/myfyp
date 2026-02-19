@@ -4,16 +4,9 @@
   },
   "categories": {
     "firefox": [
-      "feeds-news-blogging",
-      "other"
+      "feeds-news-blogging"
     ]
   },
-  "tags": [
-    "youtube",
-    "recommendations",
-    "sharing",
-    "productivity"
-  ],
   "homepage": {
     "en-US": "https://myfyp.link/"
   },
