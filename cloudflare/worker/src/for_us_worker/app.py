@@ -29,6 +29,7 @@ from for_us_worker.d1_store import (
     create_snapshot,
     delete_expired_snapshots,
     delete_snapshot_by_hash_and_token,
+    get_snapshot_payload_json_by_hash,
     get_snapshot_by_hash,
 )
 from for_us_worker.types import RequestLike, WorkerEnv
@@ -218,21 +219,21 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
         if not read_decision.allowed:
             return json_response({"detail": read_decision.reason}, status=429)
 
-    lookup = await get_snapshot_by_hash(env, snapshot_hash)
+    lookup = await get_snapshot_payload_json_by_hash(env, snapshot_hash)
     if lookup.is_expired:
         return json_response({"detail": "Snapshot has expired."}, status=410)
-    if lookup.snapshot is None:
+    if lookup.payload_json is None:
+        return json_response({"detail": "Snapshot not found."}, status=404)
+    if lookup.expires_at is None:
         return json_response({"detail": "Snapshot not found."}, status=404)
 
-    etag = build_etag("api", lookup.snapshot.hash)
-    cache_headers = build_cache_headers(lookup.snapshot.expires_at, etag)
+    etag = build_etag("api", snapshot_hash)
+    cache_headers = build_cache_headers(lookup.expires_at, etag)
     if if_none_match_matches(request.headers.get("if-none-match"), etag):
         return ResponseSpec(status=304, body="", headers=cache_headers)
 
-    return json_response(
-        model_to_json_dict(lookup.snapshot.payload, by_alias=True, exclude_none=True),
-        headers=cache_headers,
-    )
+    resolved_headers = {"content-type": "application/json; charset=utf-8", **cache_headers}
+    return ResponseSpec(status=200, body=lookup.payload_json, headers=resolved_headers)
 
 
 async def _handle_render_snapshot(snapshot_hash: str, request: RequestLike, env: WorkerEnv) -> ResponseSpec:
