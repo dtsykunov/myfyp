@@ -1139,16 +1139,17 @@ def _render_video_grid(items: list[RecommendationItem], metadata_reference_time:
         return '<p class="empty">No videos.</p>'
 
     list_items: list[str] = []
-    for item in items:
+    for index, item in enumerate(items):
         escaped_hash = html.escape(item.video_hash)
         escaped_title = html.escape(item.title)
         href = f"https://www.youtube.com/watch?v={escaped_hash}"
         thumb = f"https://i.ytimg.com/vi/{escaped_hash}/hqdefault.jpg"
+        fetch_priority = "high" if index < 6 else "low"
         list_items.append(
             (
                 '<article class="video-card">'
                 f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
-                f'<img class="thumb-image" src="{thumb}" alt="{escaped_title} thumbnail" loading="lazy" decoding="async">'
+                f'<img class="thumb-image" src="{thumb}" alt="{escaped_title} thumbnail" loading="lazy" decoding="async" fetchpriority="{fetch_priority}">'
                 "</a>"
                 '<div class="card-body">'
                 f"{_render_video_card_metadata(item, metadata_reference_time)}"
@@ -1164,16 +1165,17 @@ def _render_shorts_grid(items: list[RecommendationItem], metadata_reference_time
         return '<p class="empty">No shorts.</p>'
 
     list_items: list[str] = []
-    for item in items:
+    for index, item in enumerate(items):
         escaped_hash = html.escape(item.video_hash)
         escaped_title = html.escape(item.title)
         href = f"https://www.youtube.com/shorts/{escaped_hash}"
         thumb = f"https://i.ytimg.com/vi/{escaped_hash}/hqdefault.jpg"
+        fetch_priority = "high" if index < 4 else "low"
         list_items.append(
             (
                 '<article class="short-card">'
                 f'<a class="thumb" href="{href}" target="_blank" rel="noopener noreferrer">'
-                f'<img class="thumb-image" src="{thumb}" alt="{escaped_title} short thumbnail" loading="lazy" decoding="async">'
+                f'<img class="thumb-image" src="{thumb}" alt="{escaped_title} short thumbnail" loading="lazy" decoding="async" fetchpriority="{fetch_priority}">'
                 "</a>"
                 '<div class="card-body">'
                 f'<h3 class="title">{escaped_title}</h3>'
