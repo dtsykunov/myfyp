@@ -33,3 +33,5 @@ window.myfyp.setApiBaseUrl("https://myfyp.link")
 ```
 
 Packages are written to `dist/extensions/<browser>/`.
+
+Chrome Web Store publishing is handled by `extension/chrome/scripts/deploy.sh` and GitHub workflow `.github/workflows/deploy-extension-chrome-webstore.yml`.

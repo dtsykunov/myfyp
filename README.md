@@ -150,6 +150,8 @@ Console API:
 - `flake.nix` - local reproducible dev shell.
 - `.github/workflows/ci.yml` - Docker-based quality checks.
 - `.github/workflows/deploy-worker.yml` - Worker deploy + D1 migrations.
+- `.github/workflows/deploy-extension-chrome.yml` - Chrome package release to GitHub (`extensions-latest`).
+- `.github/workflows/deploy-extension-chrome-webstore.yml` - Chrome Web Store publish workflow.
 - `.github/workflows/deploy-extension-firefox.yml` - Firefox AMO publish workflow.
 
 Image binaries are tracked with Git LFS.
@@ -192,3 +194,20 @@ Required GitHub environment configuration is documented in:
 Required GitHub repository secrets:
 - `FIREFOX_AMO_API_KEY`
 - `FIREFOX_AMO_API_SECRET`
+
+## Chrome Extension Deployment
+
+`Release Chrome Extension` workflow:
+- builds Chrome zip package
+- publishes package to GitHub release tag `extensions-latest`
+
+`Deploy Chrome Extension to Web Store` workflow:
+- builds Chrome zip package
+- uploads draft + publishes via Chrome Web Store API v2
+
+Required GitHub repository/environment secrets:
+- `CHROME_WEBSTORE_CLIENT_ID`
+- `CHROME_WEBSTORE_CLIENT_SECRET`
+- `CHROME_WEBSTORE_REFRESH_TOKEN`
+- `CHROME_WEBSTORE_EXTENSION_ID`
+- `CHROME_WEBSTORE_PUBLISHER_ID`

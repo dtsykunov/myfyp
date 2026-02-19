@@ -9,6 +9,7 @@ required_env=(
   CHROME_WEBSTORE_CLIENT_SECRET
   CHROME_WEBSTORE_REFRESH_TOKEN
   CHROME_WEBSTORE_EXTENSION_ID
+  CHROME_WEBSTORE_PUBLISHER_ID
 )
 
 for key in "${required_env[@]}"; do
@@ -28,7 +29,12 @@ else
   exit 1
 fi
 
-publish_target="${CHROME_WEBSTORE_PUBLISH_TARGET:-default}"
+skip_publish="${CHROME_WEBSTORE_SKIP_PUBLISH:-false}"
+skip_publish="$(printf '%s' "${skip_publish}" | tr '[:upper:]' '[:lower:]')"
+if [[ "${skip_publish}" != "true" && "${skip_publish}" != "false" ]]; then
+  echo "CHROME_WEBSTORE_SKIP_PUBLISH must be true or false." >&2
+  exit 1
+fi
 
 "${script_dir}/build.sh"
 
@@ -60,45 +66,86 @@ print(access_token)
 PY
 )"
 
-upload_response="$(curl -fsS -X PUT \
-  -H "Authorization: Bearer ${access_token}" \
-  -H "x-goog-api-version: 2" \
-  -H "Content-Type: application/zip" \
-  --data-binary @"${latest_zip}" \
-  "https://www.googleapis.com/upload/chromewebstore/v1.1/items/${CHROME_WEBSTORE_EXTENSION_ID}")"
+upload_body_file="$(mktemp)"
+upload_status="$(
+  curl -sS -o "${upload_body_file}" -w "%{http_code}" -X PUT \
+    -H "Authorization: Bearer ${access_token}" \
+    -H "Content-Type: application/zip" \
+    --data-binary @"${latest_zip}" \
+    "https://chromewebstore.googleapis.com/v2/items/${CHROME_WEBSTORE_EXTENSION_ID}/draft"
+)"
+upload_response="$(cat "${upload_body_file}")"
+rm -f "${upload_body_file}"
 
-"${python_bin}" - <<'PY' "${upload_response}"
+"${python_bin}" - <<'PY' "${upload_status}" "${upload_response}"
 from __future__ import annotations
 
 import json
 import sys
 
-payload = json.loads(sys.argv[1])
-state = payload.get("uploadState")
-if state not in {"SUCCESS", "OK"}:
-    raise SystemExit(f"Chrome Web Store upload failed: {payload}")
-print(f"Chrome Web Store upload succeeded: {state}")
+status_code = int(sys.argv[1])
+raw_response = sys.argv[2]
+
+try:
+    payload = json.loads(raw_response) if raw_response.strip() else {}
+except json.JSONDecodeError:
+    payload = {"raw": raw_response}
+
+if 200 <= status_code < 300:
+    print("Chrome Web Store upload succeeded.")
+    raise SystemExit(0)
+
+details = ""
+if isinstance(payload, dict):
+    details = json.dumps(payload)
+
+if status_code == 409:
+    version_message = details.lower()
+    if "already exists" in version_message:
+        print("Chrome Web Store upload skipped: this version is already uploaded.")
+        raise SystemExit(0)
+
+raise SystemExit(f"Chrome Web Store upload failed ({status_code}): {details or raw_response}")
 PY
 
-publish_url="https://www.googleapis.com/chromewebstore/v1.1/items/${CHROME_WEBSTORE_EXTENSION_ID}/publish?publishTarget=${publish_target}"
-publish_response="$(curl -fsS -X POST \
-  -H "Authorization: Bearer ${access_token}" \
-  -H "x-goog-api-version: 2" \
-  "${publish_url}")"
+if [[ "${skip_publish}" == "true" ]]; then
+  echo "Skipping publish step (CHROME_WEBSTORE_SKIP_PUBLISH=true)."
+  exit 0
+fi
 
-"${python_bin}" - <<'PY' "${publish_response}"
+publish_body_file="$(mktemp)"
+publish_status="$(
+  curl -sS -o "${publish_body_file}" -w "%{http_code}" -X POST \
+    -H "Authorization: Bearer ${access_token}" \
+    -H "Content-Type: application/json" \
+    --data '{}' \
+    "https://chromewebstore.googleapis.com/v2/publishers/${CHROME_WEBSTORE_PUBLISHER_ID}/items/${CHROME_WEBSTORE_EXTENSION_ID}/publish"
+)"
+publish_response="$(cat "${publish_body_file}")"
+rm -f "${publish_body_file}"
+
+"${python_bin}" - <<'PY' "${publish_status}" "${publish_response}"
 from __future__ import annotations
 
 import json
 import sys
 
-payload = json.loads(sys.argv[1])
-status = payload.get("status")
-if isinstance(status, list):
-    statuses = {str(item) for item in status}
-else:
-    statuses = {str(status)}
-if not ({"OK", "ITEM_PENDING_REVIEW", "SUCCESS"} & statuses):
-    raise SystemExit(f"Chrome Web Store publish failed: {payload}")
-print(f"Chrome Web Store publish response: {payload}")
+status_code = int(sys.argv[1])
+raw_response = sys.argv[2]
+
+try:
+    payload = json.loads(raw_response) if raw_response.strip() else {}
+except json.JSONDecodeError:
+    payload = {"raw": raw_response}
+
+if 200 <= status_code < 300:
+    print(f"Chrome Web Store publish succeeded: {json.dumps(payload)}")
+    raise SystemExit(0)
+
+details = json.dumps(payload) if isinstance(payload, dict) else raw_response
+if status_code == 409 and "already" in details.lower():
+    print("Chrome Web Store publish skipped: current version is already published.")
+    raise SystemExit(0)
+
+raise SystemExit(f"Chrome Web Store publish failed ({status_code}): {details}")
 PY

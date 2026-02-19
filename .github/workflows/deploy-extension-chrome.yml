@@ -20,6 +20,7 @@ concurrency:
 jobs:
   release-chrome-extension:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - name: Checkout
         uses: actions/checkout@v4
