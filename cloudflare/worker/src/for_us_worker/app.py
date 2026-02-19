@@ -150,7 +150,8 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
     except ValueError as exc:
         return json_response({"detail": str(exc)}, status=400)
     except Exception as exc:
-        return json_response({"detail": f"Internal server error: {exc}"}, status=500)
+        print(f"Unhandled error in handle_fetch: {exc!r}")
+        return json_response({"detail": "Internal server error."}, status=500)
 
 
 async def handle_scheduled(env: WorkerEnv) -> None:

@@ -57,7 +57,6 @@ jobs:
           retention-days: 7
           path: |
             dist/extensions/firefox/*.zip
-            dist/extensions/firefox/*.sha256
             dist/extensions/firefox/signed/*
 
       - name: Warn when version is already uploaded to AMO
@@ -108,7 +107,7 @@ jobs:
             });
 
             const targets = assets.filter((asset) => {
-              if (/^myfyp-firefox-.*\.(zip|sha256)$/i.test(asset.name)) {
+              if (/^myfyp-firefox-.*\.zip$/i.test(asset.name)) {
                 return true;
               }
               if (/\.xpi$/i.test(asset.name)) {

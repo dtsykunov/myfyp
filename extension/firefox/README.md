@@ -57,4 +57,4 @@ Workflow input:
 Workflow output:
 - uploads signed `.xpi` and build artifacts
 - publishes signed `.xpi` to GitHub Release tag `extensions-latest`
-  - when AMO already has the same version, it still refreshes zip/checksum assets and keeps existing release `.xpi` files
+  - when AMO already has the same version, it still refreshes zip assets and keeps existing release `.xpi` files

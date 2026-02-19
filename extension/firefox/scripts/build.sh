@@ -47,20 +47,4 @@ zip_path="${out_dir}/myfyp-firefox-v${version}.zip"
   zip -qr "${zip_path}" manifest.json background content popup icons
 )
 
-sha_path="${zip_path}.sha256"
-"${python_bin}" - <<'PY' "${zip_path}" "${sha_path}"
-from __future__ import annotations
-
-import hashlib
-import pathlib
-import sys
-
-zip_path = pathlib.Path(sys.argv[1])
-sha_path = pathlib.Path(sys.argv[2])
-
-digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-sha_path.write_text(f"{digest}  {zip_path.name}\n", encoding="utf-8")
-PY
-
 echo "Built Firefox extension package: ${zip_path}"
-echo "Wrote checksum file: ${sha_path}"
