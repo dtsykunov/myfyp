@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 import json
 import re
 from typing import cast
@@ -35,6 +36,7 @@ from for_us_worker.types import RequestLike, WorkerEnv
 _MAX_BODY_BYTES = 64 * 1024
 _SNAPSHOT_HASH_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 _REMOVE_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
+_STATIC_PAGE_CACHE_SECONDS = 3600
 _ABUSE_CONFIG = AbuseConfig()
 _USERSCRIPT_REDIRECT_URL = (
     "https://raw.githubusercontent.com/"
@@ -96,15 +98,21 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
             return json_response({"status": "ok"})
 
         if request.method == "GET" and path == "/":
-            return html_response(
-                render_home_html(
+            return _handle_static_html_response(
+                request=request,
+                cache_key="home",
+                html_payload=render_home_html(
                     userscript_url=_USERSCRIPT_REDIRECT_URL,
                     site_url=f"{_base_url(request)}/",
-                )
+                ),
             )
 
         if request.method == "GET" and path == "/privacy":
-            return html_response(render_privacy_html())
+            return _handle_static_html_response(
+                request=request,
+                cache_key="privacy",
+                html_payload=render_privacy_html(),
+            )
 
         if request.method == "GET" and path.startswith("/"):
             file_name = path.removeprefix("/")
@@ -297,3 +305,25 @@ def _is_abuse_limiting_enabled(env: WorkerEnv) -> bool:
 def _base_url(request: RequestLike) -> str:
     parsed = urlparse(request.url)
     return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _handle_static_html_response(
+    *,
+    request: RequestLike,
+    cache_key: str,
+    html_payload: str,
+) -> ResponseSpec:
+    etag = build_etag("static", cache_key)
+    cache_headers = _build_static_cache_headers(etag)
+    if if_none_match_matches(request.headers.get("if-none-match"), etag):
+        return ResponseSpec(status=304, body="", headers=cache_headers)
+    return html_response(html_payload, headers=cache_headers)
+
+
+def _build_static_cache_headers(etag: str) -> dict[str, str]:
+    expires_at = datetime.now(UTC) + timedelta(seconds=_STATIC_PAGE_CACHE_SECONDS)
+    headers = build_cache_headers(expires_at, etag)
+    headers["Cache-Control"] = (
+        f"public, max-age={_STATIC_PAGE_CACHE_SECONDS}, stale-while-revalidate=86400"
+    )
+    return headers

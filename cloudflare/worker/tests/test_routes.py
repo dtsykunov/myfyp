@@ -26,6 +26,8 @@ def test_health_route() -> None:
 def test_root_route_renders_installation_page() -> None:
     response = _run(handle_fetch(FakeRequest(method="GET", url="https://example.com/"), FakeEnv()))
     assert response.status == 200
+    assert response.headers["Cache-Control"].startswith("public, max-age=3600")
+    assert response.headers["ETag"] == '"static-home"'
     assert "myfyp by" in response.body
     assert 'myfyp means "my for you page"' in response.body
     assert "share recommendation page" in response.body.lower()
@@ -43,12 +45,48 @@ def test_root_route_renders_installation_page() -> None:
 def test_privacy_route_renders_privacy_page() -> None:
     response = _run(handle_fetch(FakeRequest(method="GET", url="https://example.com/privacy"), FakeEnv()))
     assert response.status == 200
+    assert response.headers["Cache-Control"].startswith("public, max-age=3600")
+    assert response.headers["ETag"] == '"static-privacy"'
     assert "Privacy Notice" in response.body
     assert 'href="/favicon.svg"' in response.body
     assert '<img src="/favicon.svg" alt="">' in response.body
     assert 'href="/"' in response.body
     assert "Snapshots are automatically deleted after 7 days." in response.body
     assert 'href="/privacy"' in response.body
+
+
+def test_static_pages_return_304_when_etag_matches() -> None:
+    root_first = _run(handle_fetch(FakeRequest(method="GET", url="https://example.com/"), FakeEnv()))
+    root_second = _run(
+        handle_fetch(
+            FakeRequest(
+                method="GET",
+                url="https://example.com/",
+                headers={"if-none-match": root_first.headers["ETag"]},
+            ),
+            FakeEnv(),
+        )
+    )
+    assert root_second.status == 304
+    assert root_second.body == ""
+    assert root_second.headers["ETag"] == root_first.headers["ETag"]
+
+    privacy_first = _run(
+        handle_fetch(FakeRequest(method="GET", url="https://example.com/privacy"), FakeEnv())
+    )
+    privacy_second = _run(
+        handle_fetch(
+            FakeRequest(
+                method="GET",
+                url="https://example.com/privacy",
+                headers={"if-none-match": privacy_first.headers["ETag"]},
+            ),
+            FakeEnv(),
+        )
+    )
+    assert privacy_second.status == 304
+    assert privacy_second.body == ""
+    assert privacy_second.headers["ETag"] == privacy_first.headers["ETag"]
 
 
 def test_userscript_route_returns_not_found() -> None:
