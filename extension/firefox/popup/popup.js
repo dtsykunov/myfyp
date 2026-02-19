@@ -37,6 +37,25 @@ async function executeActiveTabCommand(command, args = null) {
   return result;
 }
 
+async function getHistory() {
+  const result = await runtimeSendMessage({ type: "myfyp.getLinkHistory" });
+  if (!result || result.ok !== true) {
+    throw new Error((result && result.error) || "Unable to load history.");
+  }
+  return Array.isArray(result.history) ? result.history : [];
+}
+
+async function removeHistoryEntry(entry) {
+  const result = await runtimeSendMessage({
+    type: "myfyp.removeLinkHistoryEntry",
+    entry
+  });
+  if (!result || result.ok !== true) {
+    throw new Error((result && result.error) || "Unable to remove history entry.");
+  }
+  return Array.isArray(result.history) ? result.history : [];
+}
+
 function formatDate(isoString) {
   if (!isoString) {
     return "Unknown time";
@@ -105,8 +124,8 @@ function renderHistory(entries) {
     removeFromListButton.textContent = "Remove from list";
     removeFromListButton.addEventListener("click", async () => {
       try {
-        const result = await executeActiveTabCommand("removeHistoryEntry", { entry });
-        renderHistory(result.history || []);
+        const history = await removeHistoryEntry(entry);
+        renderHistory(history);
         setStatus("Entry removed from list.", "success");
       } catch (error) {
         setStatus(error instanceof Error ? error.message : "Failed to remove entry.", "error");
@@ -120,8 +139,8 @@ function renderHistory(entries) {
 }
 
 async function refreshHistory() {
-  const result = await executeActiveTabCommand("getHistory");
-  renderHistory(result.history || []);
+  const history = await getHistory();
+  renderHistory(history);
 }
 
 uploadButton.addEventListener("click", async () => {

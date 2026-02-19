@@ -1,6 +1,8 @@
 const APP_NAME = "myfyp";
 const DEFAULT_API_BASE_URL = "https://myfyp.link";
 const API_BASE_URL_STORAGE_KEY = "myfyp.apiBaseUrl";
+const LINK_HISTORY_STORAGE_KEY = "myfyp.linkHistory";
+const LINK_HISTORY_MAX_ITEMS = 500;
 
 const MENU_UPLOAD = "myfyp-upload";
 const HOME_PAGE_REQUIRED_ERROR =
@@ -8,6 +10,101 @@ const HOME_PAGE_REQUIRED_ERROR =
 
 function normalizeApiBaseUrl(value) {
   return String(value || "").trim().replace(/\/+$/, "");
+}
+
+function normalizeText(value) {
+  return String(value || "").trim();
+}
+
+function normalizeLinkHistoryEntry(entry) {
+  if (!entry || typeof entry !== "object") {
+    return null;
+  }
+  const normalized = {
+    createdAt: normalizeText(entry.createdAt),
+    shareUrl: normalizeText(entry.shareUrl),
+    removeUrl: normalizeText(entry.removeUrl),
+    hash: normalizeText(entry.hash)
+  };
+  if (!normalized.createdAt && !normalized.shareUrl && !normalized.removeUrl && !normalized.hash) {
+    return null;
+  }
+  return normalized;
+}
+
+function historyTimestampMs(isoString) {
+  if (!isoString) {
+    return 0;
+  }
+  const parsedMs = new Date(isoString).getTime();
+  return Number.isFinite(parsedMs) ? parsedMs : 0;
+}
+
+function isSameLinkHistoryEntry(left, right) {
+  return (
+    left.createdAt === right.createdAt
+    && left.shareUrl === right.shareUrl
+    && left.removeUrl === right.removeUrl
+    && left.hash === right.hash
+  );
+}
+
+function getSortedLinkHistory(entries) {
+  return entries
+    .slice()
+    .sort((left, right) => historyTimestampMs(right.createdAt) - historyTimestampMs(left.createdAt));
+}
+
+async function getLinkHistory() {
+  const stored = await storageGet([LINK_HISTORY_STORAGE_KEY]);
+  const rawEntries = stored[LINK_HISTORY_STORAGE_KEY];
+  if (!Array.isArray(rawEntries)) {
+    return [];
+  }
+  return getSortedLinkHistory(
+    rawEntries
+      .map((entry) => normalizeLinkHistoryEntry(entry))
+      .filter((entry) => entry !== null)
+  );
+}
+
+async function setLinkHistory(entries) {
+  await storageSet({
+    [LINK_HISTORY_STORAGE_KEY]: entries.slice(0, LINK_HISTORY_MAX_ITEMS)
+  });
+}
+
+async function appendLinkHistoryEntry(entry) {
+  const normalizedEntry = normalizeLinkHistoryEntry(entry);
+  if (!normalizedEntry) {
+    return getLinkHistory();
+  }
+
+  const history = await getLinkHistory();
+  const deduplicated = history.filter(
+    (existing) => !(existing.shareUrl === normalizedEntry.shareUrl && existing.removeUrl === normalizedEntry.removeUrl)
+  );
+  deduplicated.unshift({
+    createdAt: normalizedEntry.createdAt || new Date().toISOString(),
+    shareUrl: normalizedEntry.shareUrl,
+    removeUrl: normalizedEntry.removeUrl,
+    hash: normalizedEntry.hash
+  });
+  const sorted = getSortedLinkHistory(deduplicated);
+  await setLinkHistory(sorted);
+  return sorted;
+}
+
+async function removeLinkHistoryEntry(entry) {
+  const normalizedEntry = normalizeLinkHistoryEntry(entry);
+  if (!normalizedEntry) {
+    return getLinkHistory();
+  }
+  const history = await getLinkHistory();
+  const filtered = history.filter((existing) => !isSameLinkHistoryEntry(existing, normalizedEntry));
+  const sorted = getSortedLinkHistory(filtered);
+  await setLinkHistory(sorted);
+  return sorted;
 }
 
 function buildApiErrorMessage(status, statusText, bodyText) {
@@ -101,6 +198,40 @@ async function postSnapshot(snapshot, apiBaseUrl) {
         error instanceof Error ? error.message : "Unknown parse error"
       }`
     };
+  }
+}
+
+function buildSnapshotUrl(apiBaseUrl, response) {
+  if (response && typeof response.url === "string" && response.url.trim()) {
+    return response.url.trim();
+  }
+  const snapshotHash = response && typeof response.hash === "string" ? response.hash : "";
+  if (!snapshotHash) {
+    return "";
+  }
+  try {
+    return new URL(`/${snapshotHash}`, `${apiBaseUrl}/`).toString();
+  } catch {
+    return "";
+  }
+}
+
+function buildRemoveUrl(apiBaseUrl, response) {
+  if (response && typeof response.removeUrl === "string" && response.removeUrl.trim()) {
+    return response.removeUrl.trim();
+  }
+  const snapshotHash = response && typeof response.hash === "string" ? response.hash : "";
+  const removeToken = response && typeof response.removeToken === "string" ? response.removeToken : "";
+  if (!snapshotHash || !removeToken) {
+    return "";
+  }
+  try {
+    return new URL(
+      `/api/snapshots/${encodeURIComponent(snapshotHash)}/remove/${encodeURIComponent(removeToken)}`,
+      `${apiBaseUrl}/`
+    ).toString();
+  } catch {
+    return "";
   }
 }
 
@@ -203,12 +334,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         case "myfyp.uploadSnapshot": {
           const apiBaseUrl = await getApiBaseUrl();
           const result = await postSnapshot(message.snapshot, apiBaseUrl);
+          if (result.ok && result.response) {
+            const shareUrl = buildSnapshotUrl(apiBaseUrl, result.response);
+            const removeUrl = buildRemoveUrl(apiBaseUrl, result.response);
+            await appendLinkHistoryEntry({
+              createdAt: new Date().toISOString(),
+              hash: normalizeText(result.response.hash),
+              shareUrl,
+              removeUrl
+            });
+          }
           sendResponse({
             ok: result.ok,
             apiBaseUrl,
             response: result.response || null,
             error: result.error || null
           });
+          return;
+        }
+        case "myfyp.getLinkHistory": {
+          const history = await getLinkHistory();
+          sendResponse({ ok: true, history });
+          return;
+        }
+        case "myfyp.removeLinkHistoryEntry": {
+          const history = await removeLinkHistoryEntry(message.entry);
+          sendResponse({ ok: true, history });
           return;
         }
         case "myfyp.executeActiveTabCommand": {

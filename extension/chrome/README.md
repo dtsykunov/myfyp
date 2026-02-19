@@ -24,9 +24,9 @@ Chrome Manifest V3 extension that mirrors the userscript behavior:
 
 ## Usage
 
-1. Open `https://www.youtube.com/` (or `https://m.youtube.com/`).
-2. Open extension popup.
-3. Click `Upload Snapshot`.
+1. Open extension popup on any page to review previously created links.
+2. Open `https://www.youtube.com/` (or `https://m.youtube.com/`) homepage when you want a new upload.
+3. Click `Upload Snapshot` in the popup.
 4. View created links directly in the popup.
 
 ## Build package
