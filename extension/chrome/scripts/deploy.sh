@@ -94,11 +94,11 @@ PY
 
 upload_body_file="$(mktemp)"
 upload_status="$(
-  curl -sS -o "${upload_body_file}" -w "%{http_code}" -X PUT \
+  curl -sS -o "${upload_body_file}" -w "%{http_code}" -X POST \
     -H "Authorization: Bearer ${access_token}" \
     -H "Content-Type: application/zip" \
     --data-binary @"${latest_zip}" \
-    "https://chromewebstore.googleapis.com/v2/items/${CHROME_WEBSTORE_EXTENSION_ID}/draft"
+    "https://chromewebstore.googleapis.com/upload/v2/publishers/${CHROME_WEBSTORE_PUBLISHER_ID}/items/${CHROME_WEBSTORE_EXTENSION_ID}:upload"
 )"
 upload_response="$(cat "${upload_body_file}")"
 rm -f "${upload_body_file}"
