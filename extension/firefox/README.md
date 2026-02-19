@@ -5,6 +5,7 @@ Firefox WebExtension that mirrors the userscript behavior:
 - Manual snapshot upload from YouTube home page.
 - No automatic upload on page load.
 - Built-in link history with share/delete/remove controls.
+- Declares no data collection in Firefox manifest consent metadata.
 
 ## Load temporary add-on (local)
 
