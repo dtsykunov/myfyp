@@ -40,4 +40,4 @@ omit = ["src/for_us_api/rendering.py"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
 include = ["src", "tests"]
-extraPaths = ["src", "../cloudflare/worker/src"]
+extraPaths = ["src", "../cloudflare/worker/src", "cloudflare/worker/src"]
