@@ -1,6 +1,6 @@
 # Cloudflare Worker (Python)
 
-This Worker target contains a FastAPI-based Cloudflare Python Worker and a deployable shared runtime package in `src/for_us_shared`.
+This Worker target contains a deployable shared runtime package in `src/for_us_shared`.
 
 Shared runtime modules:
 - Pydantic payload models (`for_us_shared.models`)
@@ -12,7 +12,6 @@ Runtime target:
 
 Adapter-specific code in this folder:
 - Cloudflare request/response entrypoint (`src/entry.py`)
-- FastAPI app routes and request adapters (`src/for_us_worker/app.py`)
 - D1 persistence and abuse-control adapters (`src/for_us_worker`)
 
 ## Local checks
@@ -31,8 +30,6 @@ Run the Worker locally on `http://127.0.0.1:8787`:
 nix develop --command sh -c "./cloudflare/worker/scripts/run-dev.sh"
 ```
 
-Note: `run-dev.sh` injects a temporary `pywrangler` compatibility shim via `sitecustomize.py` to force the Pyodide index to `0.29.3` (required for FastAPI/Pydantic support with the current workers-py toolchain).
-
 ## D1 migrations
 
 ```bash
@@ -44,7 +41,6 @@ npx wrangler d1 migrations apply myfyp --remote
 
 `Deploy Worker` workflow applies D1 migrations and deploys the worker from CI.
 It uses `pywrangler` (not plain `wrangler deploy`) so Python dependencies are bundled for deployment.
-The workflow also enables the same temporary compatibility shim to force Pyodide index `0.29.3`.
 
 Use a protected GitHub environment named `production` and configure:
 

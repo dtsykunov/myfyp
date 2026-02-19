@@ -6,7 +6,7 @@ ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y libatomic1 nodejs npm \
+    && apt-get install --no-install-recommends -y libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY cloudflare/worker/pyproject.toml ./cloudflare/worker/pyproject.toml
@@ -19,7 +19,6 @@ COPY cloudflare/worker/migrations ./cloudflare/worker/migrations
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -e "./cloudflare/worker[dev]" \
-    && pip install --no-cache-dir uv \
     && pip install --no-cache-dir workers-py \
     && chmod +x ./cloudflare/worker/scripts/*.sh
 

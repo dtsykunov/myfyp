@@ -1,19 +1,12 @@
-# pyright: reportUnusedFunction=false
-
 from __future__ import annotations
 
 from dataclasses import dataclass
 import json
 import re
-from typing import Awaitable, Callable, cast
+from typing import cast
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from starlette.datastructures import Headers
 from pydantic import ValidationError as PydanticValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.responses import Response as StarletteResponse
 
 try:
     from pydantic.v1 import ValidationError as PydanticV1ValidationError
@@ -74,40 +67,6 @@ class ResponseSpec:
     headers: dict[str, str]
 
 
-class _RequestHeadersAdapter:
-    def __init__(self, headers: Headers) -> None:
-        self._headers = headers
-
-    def get(self, name: str) -> str | None:
-        return self._headers.get(name)
-
-
-class _FastAPIRequestAdapter:
-    def __init__(self, request: Request) -> None:
-        self._request = request
-        self._headers = _RequestHeadersAdapter(request.headers)
-
-    @property
-    def method(self) -> str:
-        return self._request.method
-
-    @property
-    def url(self) -> str:
-        return str(self._request.url)
-
-    @property
-    def headers(self) -> _RequestHeadersAdapter:
-        return self._headers
-
-    async def text(self) -> str:
-        body = await self._request.body()
-        return body.decode("utf-8")
-
-
-def _adapt_fastapi_request(request: Request) -> RequestLike:
-    return _FastAPIRequestAdapter(request)
-
-
 def json_response(
     payload: object,
     status: int = 200,
@@ -128,13 +87,54 @@ def html_response(
     return ResponseSpec(status=status, body=payload, headers=resolved_headers)
 
 
-def _to_starlette_response(response: ResponseSpec) -> StarletteResponse:
-    return StarletteResponse(content=response.body, status_code=response.status, headers=response.headers)
-
-
-async def _execute_with_error_handling(handler: Callable[[], Awaitable[ResponseSpec]]) -> ResponseSpec:
+async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
     try:
-        return await handler()
+        parsed_url = urlparse(request.url)
+        path = parsed_url.path
+
+        if request.method == "GET" and path == "/health":
+            return json_response({"status": "ok"})
+
+        if request.method == "GET" and path == "/":
+            return html_response(
+                render_home_html(
+                    userscript_url=_USERSCRIPT_REDIRECT_URL,
+                    site_url=f"{_base_url(request)}/",
+                )
+            )
+
+        if request.method == "GET" and path == "/privacy":
+            return html_response(render_privacy_html())
+
+        if request.method == "GET" and path.startswith("/"):
+            file_name = path.removeprefix("/")
+            if file_name in _ICON_FILE_NAMES:
+                return ResponseSpec(
+                    status=302,
+                    body="",
+                    headers={
+                        "location": f"{_ICON_REDIRECT_BASE_URL}/{file_name}",
+                        "cache-control": "public, max-age=86400, immutable",
+                    },
+                )
+
+        if request.method == "POST" and path == "/api/snapshots":
+            return await _handle_create_snapshot(request, env)
+
+        remove_match = re.fullmatch(r"/api/snapshots/([A-Za-z0-9_-]{8,64})/remove/([A-Za-z0-9_-]{16,128})", path)
+        if request.method == "GET" and remove_match:
+            return await _handle_remove_snapshot(env, remove_match.group(1), remove_match.group(2))
+
+        if request.method == "GET" and path.startswith("/api/snapshots/"):
+            snapshot_hash = path.removeprefix("/api/snapshots/")
+            if not _SNAPSHOT_HASH_PATTERN.fullmatch(snapshot_hash):
+                return json_response({"detail": "Snapshot not found."}, status=404)
+            return await _handle_get_snapshot(request, env, snapshot_hash)
+
+        if request.method == "GET" and _SNAPSHOT_HASH_PATTERN.fullmatch(path.removeprefix("/")):
+            return await _handle_render_snapshot(path.removeprefix("/"), request, env)
+
+        return json_response({"detail": "Not found."}, status=404)
     except _VALIDATION_ERRORS as exc:
         return json_response({"detail": _extract_validation_errors(exc)}, status=422)
     except ValueError as exc:
@@ -143,157 +143,9 @@ async def _execute_with_error_handling(handler: Callable[[], Awaitable[ResponseS
         return json_response({"detail": f"Internal server error: {exc}"}, status=500)
 
 
-def _env_from_request(request: Request) -> WorkerEnv:
-    env = request.scope.get("env")
-    if env is None:
-        raise RuntimeError("Worker environment is unavailable.")
-    return cast(WorkerEnv, env)
-
-
-app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
-
-
-@app.middleware("http")
-async def _inject_fallback_env(
-    request: Request,
-    call_next: Callable[[Request], Awaitable[StarletteResponse]],
-) -> StarletteResponse:
-    if "env" not in request.scope:
-        fallback_env = cast(WorkerEnv | None, getattr(app.state, "env", None))
-        if fallback_env is not None:
-            request.scope["env"] = fallback_env
-    return await call_next(request)
-
-
-@app.exception_handler(StarletteHTTPException)
-async def _handle_http_exception(request: Request, exc: StarletteHTTPException) -> JSONResponse:
-    del request
-    if exc.status_code == 404:
-        return JSONResponse({"detail": "Not found."}, status_code=404)
-
-    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
-
-
-@app.get("/health")
-async def health_route() -> StarletteResponse:
-    return _to_starlette_response(json_response({"status": "ok"}))
-
-
-@app.get("/")
-async def root_route(request: Request) -> StarletteResponse:
-    adapted_request = _adapt_fastapi_request(request)
-    response_spec = await _execute_with_error_handling(
-        lambda: _handle_root(adapted_request)
-    )
-    return _to_starlette_response(response_spec)
-
-
-@app.get("/privacy")
-async def privacy_route() -> StarletteResponse:
-    return _to_starlette_response(html_response(render_privacy_html()))
-
-
-@app.post("/api/snapshots")
-async def create_snapshot_route(request: Request) -> StarletteResponse:
-    response_spec = await _execute_with_error_handling(
-        lambda: _handle_create_snapshot(_adapt_fastapi_request(request), _env_from_request(request))
-    )
-    return _to_starlette_response(response_spec)
-
-
-@app.get("/api/snapshots/{snapshot_hash}/remove/{remove_token}")
-async def remove_snapshot_route(snapshot_hash: str, remove_token: str, request: Request) -> StarletteResponse:
-    response_spec = await _execute_with_error_handling(
-        lambda: _handle_remove_snapshot(_env_from_request(request), snapshot_hash, remove_token)
-    )
-    return _to_starlette_response(response_spec)
-
-
-@app.get("/api/snapshots/{snapshot_hash}")
-async def get_snapshot_route(snapshot_hash: str, request: Request) -> StarletteResponse:
-    response_spec = await _execute_with_error_handling(
-        lambda: _handle_get_snapshot_route(_adapt_fastapi_request(request), _env_from_request(request), snapshot_hash)
-    )
-    return _to_starlette_response(response_spec)
-
-
-@app.get("/{candidate}")
-async def candidate_route(candidate: str, request: Request) -> StarletteResponse:
-    response_spec = await _execute_with_error_handling(
-        lambda: _handle_candidate_route(candidate, _adapt_fastapi_request(request), _env_from_request(request))
-    )
-    return _to_starlette_response(response_spec)
-
-
-async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
-    return await _execute_with_error_handling(lambda: _dispatch_request(request, env))
-
-
-async def _dispatch_request(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
-    parsed_url = urlparse(request.url)
-    path = parsed_url.path
-
-    if request.method == "GET" and path == "/health":
-        return json_response({"status": "ok"})
-
-    if request.method == "GET" and path == "/":
-        return await _handle_root(request)
-
-    if request.method == "GET" and path == "/privacy":
-        return html_response(render_privacy_html())
-
-    if request.method == "POST" and path == "/api/snapshots":
-        return await _handle_create_snapshot(request, env)
-
-    remove_match = re.fullmatch(r"/api/snapshots/([A-Za-z0-9_-]{8,64})/remove/([A-Za-z0-9_-]{16,128})", path)
-    if request.method == "GET" and remove_match:
-        return await _handle_remove_snapshot(env, remove_match.group(1), remove_match.group(2))
-
-    if request.method == "GET" and path.startswith("/api/snapshots/"):
-        snapshot_hash = path.removeprefix("/api/snapshots/")
-        return await _handle_get_snapshot_route(request, env, snapshot_hash)
-
-    if request.method == "GET" and path.startswith("/") and "/" not in path.removeprefix("/"):
-        return await _handle_candidate_route(path.removeprefix("/"), request, env)
-
-    return json_response({"detail": "Not found."}, status=404)
-
-
 async def handle_scheduled(env: WorkerEnv) -> None:
     await delete_expired_snapshots(env)
     await cleanup_abuse_state(env)
-
-
-async def _handle_root(request: RequestLike) -> ResponseSpec:
-    return html_response(
-        render_home_html(
-            userscript_url=_USERSCRIPT_REDIRECT_URL,
-            site_url=f"{_base_url(request)}/",
-        )
-    )
-
-
-async def _handle_get_snapshot_route(request: RequestLike, env: WorkerEnv, snapshot_hash: str) -> ResponseSpec:
-    if not _SNAPSHOT_HASH_PATTERN.fullmatch(snapshot_hash):
-        return json_response({"detail": "Snapshot not found."}, status=404)
-    return await _handle_get_snapshot(request, env, snapshot_hash)
-
-
-async def _handle_candidate_route(candidate: str, request: RequestLike, env: WorkerEnv) -> ResponseSpec:
-    if candidate in _ICON_FILE_NAMES:
-        return ResponseSpec(
-            status=302,
-            body="",
-            headers={
-                "location": f"{_ICON_REDIRECT_BASE_URL}/{candidate}",
-                "cache-control": "public, max-age=86400, immutable",
-            },
-        )
-
-    if _SNAPSHOT_HASH_PATTERN.fullmatch(candidate):
-        return await _handle_render_snapshot(candidate, request, env)
-
-    return json_response({"detail": "Not found."}, status=404)
 
 
 async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
