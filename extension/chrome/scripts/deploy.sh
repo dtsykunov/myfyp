@@ -46,22 +46,48 @@ fi
 
 echo "Uploading package: ${latest_zip}"
 
-oauth_response="$(curl -fsS -X POST "https://oauth2.googleapis.com/token" \
-  --data-urlencode "client_id=${CHROME_WEBSTORE_CLIENT_ID}" \
-  --data-urlencode "client_secret=${CHROME_WEBSTORE_CLIENT_SECRET}" \
-  --data-urlencode "refresh_token=${CHROME_WEBSTORE_REFRESH_TOKEN}" \
-  --data-urlencode "grant_type=refresh_token")"
+oauth_body_file="$(mktemp)"
+oauth_status="$(
+  curl -sS -o "${oauth_body_file}" -w "%{http_code}" -X POST "https://oauth2.googleapis.com/token" \
+    --data-urlencode "client_id=${CHROME_WEBSTORE_CLIENT_ID}" \
+    --data-urlencode "client_secret=${CHROME_WEBSTORE_CLIENT_SECRET}" \
+    --data-urlencode "refresh_token=${CHROME_WEBSTORE_REFRESH_TOKEN}" \
+    --data-urlencode "grant_type=refresh_token"
+)"
+oauth_response="$(cat "${oauth_body_file}")"
+rm -f "${oauth_body_file}"
 
-access_token="$("${python_bin}" - <<'PY' "${oauth_response}"
+access_token="$("${python_bin}" - <<'PY' "${oauth_status}" "${oauth_response}"
 from __future__ import annotations
 
 import json
 import sys
 
-payload = json.loads(sys.argv[1])
-access_token = payload.get("access_token")
+status_code = int(sys.argv[1])
+raw_response = sys.argv[2]
+
+try:
+    payload = json.loads(raw_response) if raw_response.strip() else {}
+except json.JSONDecodeError:
+    payload = {}
+
+if not (200 <= status_code < 300):
+    error_code = ""
+    error_description = ""
+    if isinstance(payload, dict):
+        error_code = str(payload.get("error") or "")
+        error_description = str(payload.get("error_description") or "")
+    detail = error_code or "oauth_token_request_failed"
+    if error_description:
+        detail = f"{detail}: {error_description}"
+    raise SystemExit(
+        f"OAuth token exchange failed ({status_code}). "
+        f"{detail}. Verify client ID/secret, refresh token, and OAuth consent status."
+    )
+
+access_token = payload.get("access_token") if isinstance(payload, dict) else None
 if not isinstance(access_token, str) or not access_token:
-    raise SystemExit("Unable to acquire OAuth access token for Chrome Web Store API.")
+    raise SystemExit("OAuth token exchange succeeded but access_token was missing in response.")
 print(access_token)
 PY
 )"
