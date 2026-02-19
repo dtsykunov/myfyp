@@ -2,6 +2,9 @@
 
 This directory contains the initial API scaffold.
 
+`for_us_api.rendering` delegates to shared HTML rendering in
+`cloudflare/worker/src/for_us_shared/rendering.py` so API and Worker stay consistent.
+
 ## Endpoints
 
 - `GET /health`
@@ -27,6 +30,8 @@ nix develop --command sh -c "cd api && ./scripts/run-lint.sh"
 nix develop --command sh -c "cd api && ./scripts/run-typecheck.sh"
 nix develop --command sh -c "cd api && ./scripts/run-api.sh"
 ```
+
+These scripts configure `PYTHONPATH` automatically for shared runtime imports.
 
 ## Docker (CI-aligned)
 

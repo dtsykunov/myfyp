@@ -7,6 +7,9 @@ The project has three isolated parts:
 - an API (FastAPI + SQLite for local/dev)
 - a Cloudflare Worker target (Python + D1 for production)
 
+Backend rendering and formatting are shared between API and Worker via
+`cloudflare/worker/src/for_us_shared`.
+
 ## What It Does
 
 1. You open YouTube home.
@@ -24,6 +27,7 @@ The project has three isolated parts:
 - Remove-by-token endpoint is implemented.
 - Privacy page is implemented.
 - Cloudflare Worker + D1 deployment path is implemented.
+- HTML rendering source of truth is shared (`for_us_shared.rendering`) for API + Worker.
 
 ## Quick Start (Local)
 
@@ -135,6 +139,7 @@ Console API:
 - `extension/userscript/myfyp.user.js` - Tampermonkey userscript.
 - `api/` - FastAPI + SQLite implementation.
 - `cloudflare/worker/` - Python Worker + D1 adapter.
+- `cloudflare/worker/src/for_us_shared/` - shared backend runtime (models, abuse helpers, formatting, rendering).
 - `brand/logo-mark.svg` - master square logo source.
 - `brand/icons/web/` - website favicon assets (`png`, `svg`, `ico`).
 - `extension/chrome/icons/` - Chrome extension icons.
@@ -159,6 +164,9 @@ nix develop --command sh -c "./cloudflare/worker/scripts/run-lint.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-typecheck.sh"
 nix develop --command sh -c "./cloudflare/worker/scripts/run-tests.sh"
 ```
+
+Note: API scripts set `PYTHONPATH` automatically so they can import shared modules from
+`cloudflare/worker/src/for_us_shared`.
 
 CI-aligned (Docker):
 ```bash

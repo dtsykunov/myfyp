@@ -2,6 +2,7 @@ FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app/cloudflare/worker/src
 
 WORKDIR /app
 
@@ -13,6 +14,7 @@ COPY api/pyproject.toml ./pyproject.toml
 COPY api/src ./src
 COPY api/tests ./tests
 COPY api/scripts ./scripts
+COPY cloudflare/worker/src/for_us_shared ./cloudflare/worker/src/for_us_shared
 COPY extension/userscript ./extension/userscript
 COPY brand/icons/web ./brand/icons/web
 

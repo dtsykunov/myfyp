@@ -1,6 +1,8 @@
 # Cloudflare Worker (Python)
 
 This Worker target contains a deployable shared runtime package in `src/for_us_shared`.
+That shared runtime is also imported by the local FastAPI target in `api/` to avoid
+duplicating rendering and backend utility logic.
 
 Shared runtime modules:
 - Pydantic payload models (`for_us_shared.models`)
