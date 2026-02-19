@@ -145,7 +145,7 @@ publish_status="$(
     -H "Authorization: Bearer ${access_token}" \
     -H "Content-Type: application/json" \
     --data '{}' \
-    "https://chromewebstore.googleapis.com/v2/publishers/${CHROME_WEBSTORE_PUBLISHER_ID}/items/${CHROME_WEBSTORE_EXTENSION_ID}/publish"
+    "https://chromewebstore.googleapis.com/v2/publishers/${CHROME_WEBSTORE_PUBLISHER_ID}/items/${CHROME_WEBSTORE_EXTENSION_ID}:publish"
 )"
 publish_response="$(cat "${publish_body_file}")"
 rm -f "${publish_body_file}"
