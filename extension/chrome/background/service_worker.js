@@ -8,6 +8,14 @@ const MENU_UPLOAD = "myfyp-upload";
 const HOME_PAGE_REQUIRED_ERROR =
   "myfyp works only on YouTube Home. Open https://www.youtube.com/ or https://m.youtube.com/ and stay on the homepage (/).";
 
+async function storageGet(keys) {
+  return chrome.storage.local.get(keys);
+}
+
+async function storageSet(items) {
+  await chrome.storage.local.set(items);
+}
+
 function normalizeApiBaseUrl(value) {
   return String(value || "").trim().replace(/\/+$/, "");
 }
