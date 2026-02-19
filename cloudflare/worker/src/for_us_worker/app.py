@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 import json
 import re
+from time import perf_counter
 from typing import cast
 from urllib.parse import urlparse
 
@@ -158,6 +159,7 @@ async def handle_scheduled(env: WorkerEnv) -> None:
 
 
 async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
+    started_at = perf_counter()
     if _is_abuse_limiting_enabled(env):
         create_decision = await allow_snapshot_create(
             env=env,
@@ -184,7 +186,9 @@ async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> Respo
         ),
         by_alias=True,
     )
-    return json_response(response_payload, status=201)
+    response = json_response(response_payload, status=201)
+    _add_server_timing(response.headers, "create", started_at)
+    return response
 
 
 async def _handle_remove_snapshot(
@@ -210,6 +214,7 @@ async def _handle_remove_snapshot(
 
 
 async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_hash: str) -> ResponseSpec:
+    started_at = perf_counter()
     if _is_abuse_limiting_enabled(env):
         read_decision = await allow_snapshot_read(
             env=env,
@@ -230,13 +235,16 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
     etag = build_etag("api", snapshot_hash)
     cache_headers = build_cache_headers(lookup.expires_at, etag)
     if if_none_match_matches(request.headers.get("if-none-match"), etag):
+        _add_server_timing(cache_headers, "api", started_at)
         return ResponseSpec(status=304, body="", headers=cache_headers)
 
     resolved_headers = {"content-type": "application/json; charset=utf-8", **cache_headers}
+    _add_server_timing(resolved_headers, "api", started_at)
     return ResponseSpec(status=200, body=lookup.payload_json, headers=resolved_headers)
 
 
 async def _handle_render_snapshot(snapshot_hash: str, request: RequestLike, env: WorkerEnv) -> ResponseSpec:
+    started_at = perf_counter()
     if _is_abuse_limiting_enabled(env):
         read_decision = await allow_snapshot_read(
             env=env,
@@ -255,9 +263,12 @@ async def _handle_render_snapshot(snapshot_hash: str, request: RequestLike, env:
     etag = build_etag("html", lookup.snapshot.hash)
     cache_headers = build_cache_headers(lookup.snapshot.expires_at, etag)
     if if_none_match_matches(request.headers.get("if-none-match"), etag):
+        _add_server_timing(cache_headers, "html", started_at)
         return ResponseSpec(status=304, body="", headers=cache_headers)
 
-    return html_response(render_snapshot_html(lookup.snapshot), headers=cache_headers)
+    response = html_response(render_snapshot_html(lookup.snapshot), headers=cache_headers)
+    _add_server_timing(response.headers, "html", started_at)
+    return response
 
 
 async def _read_body_with_limit(request: RequestLike, max_bytes: int) -> str:
@@ -328,3 +339,8 @@ def _build_static_cache_headers(etag: str) -> dict[str, str]:
         f"public, max-age={_STATIC_PAGE_CACHE_SECONDS}, stale-while-revalidate=86400"
     )
     return headers
+
+
+def _add_server_timing(headers: dict[str, str], metric_name: str, started_at: float) -> None:
+    duration_ms = (perf_counter() - started_at) * 1000.0
+    headers["Server-Timing"] = f'{metric_name};dur={duration_ms:.2f}'
