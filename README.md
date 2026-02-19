@@ -20,6 +20,7 @@ The project has two isolated parts:
 
 - Userscript parsing is implemented.
 - Browser extensions are implemented (Chrome + Firefox packages).
+- Chrome extension is distributed as `myfyp-chrome-latest.zip` on GitHub releases for manual `Load unpacked` install.
 - Worker storage and rendering are implemented.
 - Remove-by-token endpoint is implemented.
 - Privacy page is implemented.

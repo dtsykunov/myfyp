@@ -13,6 +13,15 @@ Chrome Manifest V3 extension that mirrors the userscript behavior:
 3. Click **Load unpacked**.
 4. Select the `extension/chrome` directory.
 
+## Install from GitHub release (manual)
+
+1. Download `myfyp-chrome-latest.zip` from:
+   `https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-chrome-latest.zip`
+2. Unzip the archive.
+3. Open `chrome://extensions`.
+4. Enable **Developer mode**.
+5. Click **Load unpacked** and select the unzipped folder.
+
 ## Usage
 
 1. Open `https://www.youtube.com/` (or `https://m.youtube.com/`).

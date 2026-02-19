@@ -29,6 +29,12 @@ jobs:
       - name: Build Chrome extension package
         run: ./extension/chrome/scripts/build.sh
 
+      - name: Create stable Chrome package alias
+        run: |
+          set -euo pipefail
+          latest_zip="$(ls -t dist/extensions/chrome/myfyp-chrome-v*.zip | head -n 1)"
+          cp "$latest_zip" dist/extensions/chrome/myfyp-chrome-latest.zip
+
       - name: Upload extension build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -65,7 +71,8 @@ jobs:
             });
 
             const targets = assets.filter((asset) =>
-              /^myfyp-chrome-.*\.(zip|sha256)$/i.test(asset.name)
+              /^myfyp-chrome-.*\.zip$/i.test(asset.name) ||
+              /^myfyp-chrome-.*\.sha256$/i.test(asset.name)
             );
 
             for (const asset of targets) {
@@ -93,4 +100,3 @@ jobs:
           overwrite_files: true
           files: |
             dist/extensions/chrome/*.zip
-            dist/extensions/chrome/*.sha256

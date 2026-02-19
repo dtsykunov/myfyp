@@ -142,4 +142,3 @@ jobs:
           files: |
             dist/extensions/firefox/signed/*.xpi
             dist/extensions/firefox/*.zip
-            dist/extensions/firefox/*.sha256

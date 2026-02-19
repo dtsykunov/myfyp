@@ -238,5 +238,9 @@ def test_shared_rendering_helper_branches() -> None:
     assert '<img src="/favicon.svg" alt="">' in home_rendered
     assert 'href="/"' in home_rendered
     assert 'href="https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-firefox-latest.xpi"' in home_rendered
+    assert (
+        'href="https://github.com/dtsykunov/myfyp/releases/download/'
+        'extensions-latest/myfyp-chrome-latest.zip"'
+    ) in home_rendered
     assert 'href="https://www.tampermonkey.net/"' in home_rendered
     assert 'href="/privacy"' in home_rendered

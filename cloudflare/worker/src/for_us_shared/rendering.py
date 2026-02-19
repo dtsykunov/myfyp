@@ -16,6 +16,11 @@ from for_us_shared.models import RecommendationItem, StoredSnapshot
 
 def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
     escaped_userscript_url = html.escape(userscript_url)
+    chrome_extension_url = (
+        "https://github.com/dtsykunov/myfyp/releases/download/"
+        "extensions-latest/myfyp-chrome-latest.zip"
+    )
+    escaped_chrome_extension_url = html.escape(chrome_extension_url)
     firefox_extension_url = (
         "https://github.com/dtsykunov/myfyp/releases/download/"
         "extensions-latest/myfyp-firefox-latest.xpi"
@@ -404,6 +409,7 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
         </p>
         <div class="hero-actions">
           <a class="button-link button-muted" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">Install Firefox Extension</a>
+          <a class="button-link button-muted" href="{escaped_chrome_extension_url}" target="_blank" rel="noopener noreferrer">Install Chrome Extension (Manual)</a>
           <a class="button-link button-primary userscript-link" href="{escaped_userscript_url}">Install Userscript</a>
           <a class="button-link button-muted" href="/privacy">Review Privacy Notice</a>
         </div>
@@ -418,7 +424,15 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
             <li>Confirm the Firefox install prompt.</li>
             <li>Open <a class="userscript-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube Home</a>, open the extension popup, and click <code>Upload Snapshot</code>.</li>
           </ol>
-          <h3 class="install-subtitle">Option 2: Userscript</h3>
+          <h3 class="install-subtitle">Option 2: Chrome Extension (Manual setup)</h3>
+          <ol class="steps">
+            <li>Download the stable package <a class="userscript-link" href="{escaped_chrome_extension_url}" target="_blank" rel="noopener noreferrer">myfyp-chrome-latest.zip</a>.</li>
+            <li>Unzip <code>myfyp-chrome-latest.zip</code>.</li>
+            <li>Open <code>chrome://extensions</code> and enable <code>Developer mode</code>.</li>
+            <li>Click <code>Load unpacked</code> and select the unzipped extension folder.</li>
+            <li>Open <a class="userscript-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube Home</a>, open the extension popup, and click <code>Upload Snapshot</code>.</li>
+          </ol>
+          <h3 class="install-subtitle">Option 3: Userscript</h3>
           <ol class="steps">
             <li>Install <a class="userscript-link" href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">Tampermonkey</a> (or another userscript manager).</li>
             <li>Open and install <a class="userscript-link" href="{escaped_userscript_url}">the userscript</a>.</li>
