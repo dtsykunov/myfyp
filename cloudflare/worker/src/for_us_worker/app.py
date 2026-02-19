@@ -96,20 +96,15 @@ async def handle_fetch(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
             return json_response({"status": "ok"})
 
         if request.method == "GET" and path == "/":
-            return html_response(render_home_html("https://myfyp.link/myfyp.user.js"))
+            return html_response(
+                render_home_html(
+                    userscript_url=_USERSCRIPT_REDIRECT_URL,
+                    site_url=f"{_base_url(request)}/",
+                )
+            )
 
         if request.method == "GET" and path == "/privacy":
             return html_response(render_privacy_html())
-
-        if request.method == "GET" and path == "/myfyp.user.js":
-            return ResponseSpec(
-                status=302,
-                body="",
-                headers={
-                    "location": _USERSCRIPT_REDIRECT_URL,
-                    "cache-control": "no-cache",
-                },
-            )
 
         if request.method == "GET" and path.startswith("/"):
             file_name = path.removeprefix("/")

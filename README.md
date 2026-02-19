@@ -39,7 +39,7 @@ cd api
 ```
 
 3. Install userscript in Tampermonkey from:
-`http://127.0.0.1:8000/myfyp.user.js`
+`https://raw.githubusercontent.com/dtsykunov/myfyp/master/extension/userscript/myfyp.user.js`
 
 4. Open:
 `https://www.youtube.com/`
@@ -94,7 +94,6 @@ Create response example:
 ## HTTP Endpoints
 
 - `GET /health` - health check.
-- `GET /myfyp.user.js` - serves the userscript.
 - `GET /` - home page with install/usage instructions.
 - `GET /privacy` - privacy notice.
 - `POST /api/snapshots` - create snapshot.

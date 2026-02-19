@@ -14,17 +14,18 @@ from for_us_api.formatting import (
 from for_us_api.models import RecommendationItem, StoredSnapshot
 
 
-def render_home_html(userscript_url: str) -> str:
+def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
     escaped_userscript_url = html.escape(userscript_url)
     firefox_extension_url = (
         "https://github.com/dtsykunov/myfyp/releases/download/"
         "extensions-latest/myfyp-firefox-latest.xpi"
     )
     escaped_firefox_extension_url = html.escape(firefox_extension_url)
-    parsed_userscript_url = urlsplit(userscript_url)
-    home_url = "/"
-    if parsed_userscript_url.scheme and parsed_userscript_url.netloc:
-        home_url = urlunsplit((parsed_userscript_url.scheme, parsed_userscript_url.netloc, "/", "", ""))
+    home_url = site_url or "/"
+    if not site_url:
+        parsed_userscript_url = urlsplit(userscript_url)
+        if parsed_userscript_url.scheme and parsed_userscript_url.netloc:
+            home_url = urlunsplit((parsed_userscript_url.scheme, parsed_userscript_url.netloc, "/", "", ""))
     schema_home_url = home_url if home_url.startswith("http") else "https://myfyp.link/"
     seo_title = "myfyp (my for you page) | Share recommendation pages"
     seo_description = (

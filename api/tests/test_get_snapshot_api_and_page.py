@@ -2,7 +2,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi.testclient import TestClient
-from pytest import MonkeyPatch
 
 from for_us_api.app import create_app
 from for_us_api.models import CreateSnapshotRequest, RecommendationItem
@@ -207,26 +206,13 @@ def test_root_page_includes_installation_instructions(tmp_path: Path) -> None:
     assert 'href="/favicon.svg"' in response.text
     assert '<img src="/favicon.svg" alt="">' in response.text
     assert 'href="/"' in response.text
-    assert 'href="http://testserver/myfyp.user.js"' in response.text
+    assert (
+        'href="https://raw.githubusercontent.com/dtsykunov/myfyp/master/extension/userscript/myfyp.user.js"'
+        in response.text
+    )
     assert 'href="https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-firefox-latest.xpi"' in response.text
     assert 'href="https://www.tampermonkey.net/"' in response.text
     assert 'href="/privacy"' in response.text
-
-
-def test_userscript_endpoint_serves_userscript(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
-    database_path = tmp_path / "snapshots.db"
-    userscript_path = tmp_path / "myfyp.user.js"
-    userscript_text = "// ==UserScript==\n// @name Test\n// ==/UserScript=="
-    userscript_path.write_text(userscript_text, encoding="utf-8")
-    monkeypatch.setenv("FOR_US_USERSCRIPT_PATH", str(userscript_path))
-
-    with TestClient(create_app(store=SnapshotStore(database_path=database_path))) as client:
-        response = client.get("/myfyp.user.js")
-
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/javascript")
-    assert response.headers["cache-control"] == "no-cache"
-    assert response.text == userscript_text
 
 
 def test_privacy_page_is_available(tmp_path: Path) -> None:

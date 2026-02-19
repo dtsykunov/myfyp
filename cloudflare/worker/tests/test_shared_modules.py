@@ -228,7 +228,9 @@ def test_shared_rendering_helper_branches() -> None:
     assert 'href="/"' in privacy_rendered
     assert 'href="/privacy"' in privacy_rendered
 
-    home_rendered = rendering.render_home_html("https://myfyp.link/myfyp.user.js")
+    home_rendered = rendering.render_home_html(
+        "https://raw.githubusercontent.com/dtsykunov/myfyp/master/extension/userscript/myfyp.user.js"
+    )
     assert 'myfyp means "my for you page"' in home_rendered
     assert "share recommendation page" in home_rendered.lower()
     assert "Install and Use" in home_rendered

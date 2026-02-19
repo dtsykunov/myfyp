@@ -33,7 +33,7 @@ def test_root_route_renders_installation_page() -> None:
     assert 'href="/favicon.svg"' in response.body
     assert '<img src="/favicon.svg" alt="">' in response.body
     assert 'href="/"' in response.body
-    assert "https://myfyp.link/myfyp.user.js" in response.body
+    assert "https://raw.githubusercontent.com/dtsykunov/myfyp/master/extension/userscript/myfyp.user.js" in response.body
     assert "https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-firefox-latest.xpi" in response.body
     assert 'href="https://www.tampermonkey.net/"' in response.body
     assert 'href="/privacy"' in response.body
@@ -50,16 +50,14 @@ def test_privacy_route_renders_privacy_page() -> None:
     assert 'href="/privacy"' in response.body
 
 
-def test_userscript_route_redirects_to_canonical_script() -> None:
+def test_userscript_route_returns_not_found() -> None:
     response = _run(
         handle_fetch(
             FakeRequest(method="GET", url="https://example.com/myfyp.user.js"),
             FakeEnv(),
         )
     )
-    assert response.status == 302
-    assert response.headers["location"].endswith("/extension/userscript/myfyp.user.js")
-    assert response.headers["cache-control"] == "no-cache"
+    assert response.status == 404
 
 
 def test_icon_routes_redirect_to_canonical_brand_assets() -> None:

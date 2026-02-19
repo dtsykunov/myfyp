@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         myfyp
 // @namespace    https://myfyp.link
-// @version      0.1.21
+// @version      0.1.22
 // @description  Share your personal YouTube recommendation page snapshot
 // @match        https://www.youtube.com/
 // @match        https://m.youtube.com/
 // @grant        GM_xmlhttpRequest
 // @grant        unsafeWindow
 // @grant        GM_registerMenuCommand
-// @downloadURL  https://myfyp.link/myfyp.user.js
-// @updateURL    https://myfyp.link/myfyp.user.js
+// @downloadURL  https://raw.githubusercontent.com/dtsykunov/myfyp/master/extension/userscript/myfyp.user.js
+// @updateURL    https://raw.githubusercontent.com/dtsykunov/myfyp/master/extension/userscript/myfyp.user.js
 // @connect      myfyp.link
 // @connect      localhost
 // @connect      127.0.0.1
