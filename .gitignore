@@ -18,5 +18,7 @@ result-*
 node_modules/
 .wrangler/
 cloudflare/worker/wrangler.production.toml
+cloudflare/worker/.venv-workers/
+cloudflare/worker/python_modules/
 coverage/
 .env

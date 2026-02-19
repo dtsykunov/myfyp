@@ -4,7 +4,7 @@
 
 The project has two isolated parts:
 - a userscript/browser extension (browser-side parser/uploader)
-- a Python Cloudflare Worker (API + HTML rendering + D1 persistence)
+- a Python Cloudflare Worker with FastAPI (API + HTML rendering + D1 persistence)
 
 ## What It Does
 
@@ -177,6 +177,7 @@ docker compose up worker
 - runs after `CI` succeeds on `main`/`master` (or by manual dispatch)
 - applies D1 migrations
 - deploys worker using `pywrangler`
+- enables a temporary `pywrangler` compatibility shim that forces Pyodide index `0.29.3` for FastAPI/Pydantic packaging
 
 Required GitHub environment configuration is documented in:
 `cloudflare/worker/README.md`

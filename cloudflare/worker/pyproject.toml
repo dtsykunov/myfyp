@@ -4,15 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "for-us-worker"
-version = "0.1.1"
+version = "0.2.0"
 description = "Cloudflare Python Worker adapter for myfyp"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-  "pydantic==1.10.24",
+  "fastapi==0.122.0",
+  "pydantic==2.12.5",
 ]
 
 [project.optional-dependencies]
 dev = [
+  "httpx==0.28.1",
   "pytest==8.4.2",
   "pytest-cov==7.0.0",
   "ruff==0.15.0",

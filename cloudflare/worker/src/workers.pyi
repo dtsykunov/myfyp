@@ -7,3 +7,10 @@ class Response:
 
 class WorkerEntrypoint:
     env: Any
+
+
+class _ASGI:
+    async def fetch(self, app: Any, request: Any, env: Any) -> Response: ...
+
+
+asgi: _ASGI
