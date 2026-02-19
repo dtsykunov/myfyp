@@ -395,6 +395,16 @@
     return extracted || null;
   }
 
+  function extractChannelNameFromProfileAlt(item) {
+    const profileImage = item.querySelector(".ytProfileIconImage[alt], ytm-profile-icon img[alt]");
+    const altText = normalizeText(profileImage ? profileImage.getAttribute("alt") : "");
+    const match = altText.match(/^go to channel\s+(.+)$/i);
+    if (!match) {
+      return null;
+    }
+    return normalizeText(match[1]);
+  }
+
   function isAvatarHost(hostname) {
     const normalized = hostname.toLowerCase();
     return AVATAR_HOST_PATTERNS.some(
@@ -455,13 +465,21 @@
   function extractChannelData(item, baseUrl) {
     const linkFromMetadata = item.querySelector(".yt-lockup-metadata-view-model__metadata-row a[href]");
     const linkFromLegacy = item.querySelector("ytd-channel-name a[href], #channel-name a[href]");
+    const linkFromMobile = item.querySelector("ytm-channel-thumbnail-with-link-renderer a[href]");
     const allAnchors = Array.from(item.querySelectorAll("a[href]"));
     const linkFromPattern = allAnchors.find((anchor) => isChannelHref(anchor.getAttribute("href"), baseUrl));
-    const channelAnchor = linkFromMetadata || linkFromLegacy || linkFromPattern || null;
+    const channelAnchor = linkFromMetadata || linkFromLegacy || linkFromMobile || linkFromPattern || null;
 
     let channelName = normalizeText(channelAnchor ? channelAnchor.textContent : "");
     if (!channelName) {
-      channelName = extractChannelNameFromAvatarAria(item) || "";
+      channelName = normalizeText(
+        item.querySelector(".YtmBadgeAndBylineRendererItemByline .yt-core-attributed-string")?.textContent
+      );
+    }
+    if (!channelName) {
+      channelName = extractChannelNameFromAvatarAria(item)
+        || extractChannelNameFromProfileAlt(item)
+        || "";
     }
 
     return {
@@ -504,8 +522,9 @@
       return null;
     }
 
-    const titleLink = item.querySelector("h3 a[href*='/watch?v=']");
-    const titleText = normalizeText(titleLink ? titleLink.textContent : "");
+    const titleElement = item.querySelector("h3 .yt-core-attributed-string, h3 span, h3");
+    const titleLink = item.querySelector("h3 a[href*='/watch?v='], a[href*='/watch?v='][title]");
+    const titleText = normalizeText(titleElement ? titleElement.textContent : "");
     const titleAttr = normalizeText(titleLink ? titleLink.getAttribute("title") : "");
     const title = titleText || titleAttr || videoHash;
 
@@ -513,7 +532,11 @@
 
     const metadataTexts = Array.from(
       item.querySelectorAll(
-        ".yt-lockup-metadata-view-model__metadata .yt-content-metadata-view-model__metadata-row [role='text']"
+        [
+          ".yt-lockup-metadata-view-model__metadata .yt-content-metadata-view-model__metadata-row [role='text']",
+          ".YtmBadgeAndBylineRendererItemByline [role='text']",
+          ".YtmBadgeAndBylineRendererItemByline .yt-core-attributed-string"
+        ].join(", ")
       )
     )
       .map((node) => normalizeText(node.textContent))
@@ -561,14 +584,20 @@
       return null;
     }
 
-    const titleElement = item.querySelector(".shortsLockupViewModelHostMetadataTitle [role='text']");
-    const titleLink = item.querySelector(".shortsLockupViewModelHostMetadataTitle a[href]");
+    const titleElement = item.querySelector(
+      ".shortsLockupViewModelHostMetadataTitle [role='text'], .shortsLockupViewModelHostMetadataTitle .yt-core-attributed-string"
+    );
+    const titleLink = item.querySelector(
+      ".shortsLockupViewModelHostMetadataTitle a[href], a[href*='/shorts/'][title]"
+    );
     const title = normalizeText(titleElement ? titleElement.textContent : "")
       || normalizeText(titleLink ? titleLink.getAttribute("title") : "")
       || videoHash;
 
     const viewText = normalizeText(
-      item.querySelector(".shortsLockupViewModelHostMetadataSubhead [role='text']")?.textContent
+      item.querySelector(
+        ".shortsLockupViewModelHostMetadataSubhead [role='text'], .shortsLockupViewModelHostMetadataSubhead .yt-core-attributed-string"
+      )?.textContent
     );
 
     return buildRecommendationItem({
@@ -597,8 +626,16 @@
 
   function isAdRichItem(item, baseUrl) {
     if (
+      item.matches(
+        "ytm-promoted-video-renderer, ytm-companion-ad-renderer, ytm-display-ad-renderer"
+      )
+    ) {
+      return true;
+    }
+
+    if (
       item.querySelector(
-        "ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, feed-ad-metadata-view-model, ad-badge-view-model"
+        "ytd-ad-slot-renderer, ytd-in-feed-ad-layout-renderer, feed-ad-metadata-view-model, ad-badge-view-model, ytm-promoted-video-renderer, ytm-companion-ad-renderer, ytm-display-ad-renderer"
       )
     ) {
       return true;
@@ -615,7 +652,9 @@
   }
 
   function collectRecommendationsFromDocument(doc) {
-    const items = doc.querySelectorAll("ytd-rich-item-renderer");
+    const items = doc.querySelectorAll(
+      "ytd-rich-item-renderer, ytm-video-with-context-renderer, ytm-shorts-lockup-view-model"
+    );
     const videos = [];
     const shorts = [];
     const seenVideos = new Set();
@@ -628,7 +667,9 @@
         continue;
       }
 
-      const isShortsItem = Boolean(item.closest("ytd-rich-section-renderer"));
+      const tagName = item.tagName.toLowerCase();
+      const isShortsItem = tagName === "ytm-shorts-lockup-view-model"
+        || Boolean(item.closest("ytd-rich-section-renderer"));
       const parsedItem = isShortsItem
         ? parseShortItem(item, baseUrl, nowMs)
         : parseStandardVideoItem(item, baseUrl, nowMs);
