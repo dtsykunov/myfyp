@@ -234,7 +234,7 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
         return json_response({"detail": "Snapshot not found."}, status=404)
 
     etag = build_etag("api", snapshot_hash)
-    cache_headers = build_cache_headers(lookup.expires_at, etag)
+    cache_headers = _build_snapshot_cache_headers(lookup.expires_at, etag)
     if if_none_match_matches(request.headers.get("if-none-match"), etag):
         _add_server_timing(cache_headers, "api", started_at)
         return ResponseSpec(status=304, body="", headers=cache_headers)
@@ -262,7 +262,7 @@ async def _handle_render_snapshot(snapshot_hash: str, request: RequestLike, env:
         return html_response("<h1>404 Snapshot not found</h1>", status=404)
 
     etag = build_etag("html", lookup.snapshot.hash)
-    cache_headers = build_cache_headers(lookup.snapshot.expires_at, etag)
+    cache_headers = _build_snapshot_cache_headers(lookup.snapshot.expires_at, etag)
     if if_none_match_matches(request.headers.get("if-none-match"), etag):
         _add_server_timing(cache_headers, "html", started_at)
         return ResponseSpec(status=304, body="", headers=cache_headers)
@@ -339,6 +339,14 @@ def _build_static_cache_headers(etag: str) -> dict[str, str]:
     headers["Cache-Control"] = (
         f"public, max-age={_STATIC_PAGE_CACHE_SECONDS}, stale-while-revalidate=86400"
     )
+    return headers
+
+
+def _build_snapshot_cache_headers(expires_at: datetime, etag: str) -> dict[str, str]:
+    headers = build_cache_headers(expires_at, etag)
+    # Snapshot links can be deleted before TTL expiry, so force revalidation
+    # to avoid serving stale cached pages after user-triggered deletion.
+    headers["Cache-Control"] = "public, no-cache, max-age=0, must-revalidate"
     return headers
 
 
