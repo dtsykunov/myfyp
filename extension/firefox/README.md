@@ -40,7 +40,7 @@ If the current manifest version is already uploaded to AMO, deployment exits suc
 
 For `listed` channel deployments, AMO listing metadata is sourced from:
 
-- `extension/firefox/amo/metadata.listed.json` (summary, categories, tags, support/homepage links)
+- `extension/firefox/amo/metadata.listed.json` (localized listing metadata, categories/tags, support/homepage links, release notes, compatibility, and approval notes)
 - `extension/firefox/icons/icon-128.png` (listing icon upload)
 
 ## GitHub Actions Deployment
