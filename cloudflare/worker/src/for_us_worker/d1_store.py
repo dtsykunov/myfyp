@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
 import hmac
-import json
 import math
 import secrets
 import string
@@ -14,7 +13,7 @@ from typing import cast
 from for_us_shared.models import (
     CreateSnapshotRequest,
     StoredSnapshot,
-    model_to_json_dict,
+    model_to_json_string,
     parse_create_snapshot_request_json,
 )
 
@@ -64,9 +63,11 @@ async def create_snapshot(
     created_at = _to_utc(now or datetime.now(timezone.utc))
     expires_at = created_at + timedelta(days=_RETENTION_DAYS)
     remove_token = _generate_remove_token()
-    payload_json = json.dumps(
-        model_to_json_dict(payload, by_alias=True, exclude_none=True),
-        separators=(",", ":"),
+    payload_json = model_to_json_string(
+        payload,
+        by_alias=True,
+        exclude_none=True,
+        compact=True,
         sort_keys=True,
     )
 

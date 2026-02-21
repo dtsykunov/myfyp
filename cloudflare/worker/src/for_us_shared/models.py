@@ -147,3 +147,21 @@ def model_to_json_dict(
     exclude_none: bool = False,
 ) -> dict[str, object]:
     return cast(dict[str, object], json.loads(model.json(by_alias=by_alias, exclude_none=exclude_none)))
+
+
+def model_to_json_string(
+    model: BaseModel,
+    *,
+    by_alias: bool = False,
+    exclude_none: bool = False,
+    compact: bool = False,
+    sort_keys: bool = False,
+) -> str:
+    if compact or sort_keys:
+        return model.json(
+            by_alias=by_alias,
+            exclude_none=exclude_none,
+            separators=(",", ":") if compact else None,
+            sort_keys=sort_keys,
+        )
+    return model.json(by_alias=by_alias, exclude_none=exclude_none)
