@@ -41,6 +41,12 @@ class SnapshotJsonLookupResult:
 
 
 @dataclass(frozen=True)
+class SnapshotExpiryLookupResult:
+    expires_at: datetime | None
+    is_expired: bool
+
+
+@dataclass(frozen=True)
 class CreatedSnapshot:
     hash: str
     created_at: datetime
@@ -157,6 +163,32 @@ async def get_snapshot_payload_json_by_hash(
         expires_at=expires_at,
         is_expired=False,
     )
+
+
+async def get_snapshot_expiry_by_hash(
+    env: WorkerEnv,
+    snapshot_hash: str,
+    now: datetime | None = None,
+) -> SnapshotExpiryLookupResult:
+    effective_now = _to_utc(now or datetime.now(timezone.utc))
+    row = await env.DB.prepare(
+        """
+        SELECT expires_at
+        FROM snapshots
+        WHERE hash = ?
+        """
+    ).bind(snapshot_hash).first()
+
+    mapping = _to_mapping(row)
+    if mapping is None:
+        return SnapshotExpiryLookupResult(expires_at=None, is_expired=False)
+
+    expires_at = _parse_datetime(_require_str(mapping, "expires_at"))
+    if expires_at <= effective_now:
+        await delete_snapshot_by_hash(env, snapshot_hash)
+        return SnapshotExpiryLookupResult(expires_at=None, is_expired=True)
+
+    return SnapshotExpiryLookupResult(expires_at=expires_at, is_expired=False)
 
 
 async def delete_snapshot_by_hash(env: WorkerEnv, snapshot_hash: str) -> None:

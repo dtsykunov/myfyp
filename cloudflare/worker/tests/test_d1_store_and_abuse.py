@@ -47,6 +47,9 @@ def test_d1_store_create_get_missing_and_expired(monkeypatch: pytest.MonkeyPatch
     assert present_json.payload_json is not None
     assert present_json.expires_at is not None
     assert present_json.is_expired is False
+    present_expiry = _run(d1_store.get_snapshot_expiry_by_hash(env, "AbcdEf123456", now=now))
+    assert present_expiry.expires_at is not None
+    assert present_expiry.is_expired is False
 
     missing = _run(d1_store.get_snapshot_by_hash(env, "doesnotexist", now=now))
     assert missing.snapshot is None
@@ -55,6 +58,9 @@ def test_d1_store_create_get_missing_and_expired(monkeypatch: pytest.MonkeyPatch
     assert missing_json.payload_json is None
     assert missing_json.expires_at is None
     assert missing_json.is_expired is False
+    missing_expiry = _run(d1_store.get_snapshot_expiry_by_hash(env, "doesnotexist", now=now))
+    assert missing_expiry.expires_at is None
+    assert missing_expiry.is_expired is False
 
     expired_time = now + timedelta(days=8)
     expired = _run(d1_store.get_snapshot_by_hash(env, "AbcdEf123456", now=expired_time))
@@ -67,6 +73,12 @@ def test_d1_store_create_get_missing_and_expired(monkeypatch: pytest.MonkeyPatch
     assert expired_json.payload_json is None
     assert expired_json.expires_at is None
     assert expired_json.is_expired is True
+
+    monkeypatch.setattr(d1_store, "_generate_hash", lambda: "AbcdEf777777")
+    _run(d1_store.create_snapshot(env, _payload(), now=now))
+    expired_expiry = _run(d1_store.get_snapshot_expiry_by_hash(env, "AbcdEf777777", now=expired_time))
+    assert expired_expiry.expires_at is None
+    assert expired_expiry.is_expired is True
 
 
 def test_d1_store_create_snapshot_raises_after_collisions(monkeypatch: pytest.MonkeyPatch) -> None:

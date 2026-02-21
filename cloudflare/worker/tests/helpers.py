@@ -116,6 +116,11 @@ class FakeD1Database:
             return self.snapshots.get(_as_str(params[0]))
         if "select hash, expires_at, payload_json from snapshots where hash" in normalized:
             return self.snapshots.get(_as_str(params[0]))
+        if "select expires_at from snapshots where hash" in normalized:
+            snapshot = self.snapshots.get(_as_str(params[0]))
+            if snapshot is None:
+                return None
+            return {"expires_at": snapshot.get("expires_at")}
         if "select delete_token from snapshots where hash" in normalized:
             snapshot = self.snapshots.get(_as_str(params[0]))
             if snapshot is None:
