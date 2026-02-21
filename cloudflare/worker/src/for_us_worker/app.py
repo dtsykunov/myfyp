@@ -29,6 +29,7 @@ from for_us_worker.d1_store import (
     DeleteSnapshotResult,
     create_snapshot,
     delete_expired_snapshots,
+    get_snapshot_expiry_by_hash,
     delete_snapshot_by_hash_and_token,
     get_snapshot_payload_json_by_hash,
     get_snapshot_by_hash,
@@ -225,6 +226,17 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
         if not read_decision.allowed:
             return json_response({"detail": read_decision.reason}, status=429)
 
+    etag = build_etag("api", snapshot_hash)
+    if if_none_match_matches(request.headers.get("if-none-match"), etag):
+        expiry_lookup = await get_snapshot_expiry_by_hash(env, snapshot_hash)
+        if expiry_lookup.is_expired:
+            return json_response({"detail": "Snapshot has expired."}, status=410)
+        if expiry_lookup.expires_at is None:
+            return json_response({"detail": "Snapshot not found."}, status=404)
+        cache_headers = _build_snapshot_cache_headers(expiry_lookup.expires_at, etag)
+        _add_server_timing(cache_headers, "api", started_at)
+        return ResponseSpec(status=304, body="", headers=cache_headers)
+
     lookup = await get_snapshot_payload_json_by_hash(env, snapshot_hash)
     if lookup.is_expired:
         return json_response({"detail": "Snapshot has expired."}, status=410)
@@ -233,12 +245,7 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
     if lookup.expires_at is None:
         return json_response({"detail": "Snapshot not found."}, status=404)
 
-    etag = build_etag("api", snapshot_hash)
     cache_headers = _build_snapshot_cache_headers(lookup.expires_at, etag)
-    if if_none_match_matches(request.headers.get("if-none-match"), etag):
-        _add_server_timing(cache_headers, "api", started_at)
-        return ResponseSpec(status=304, body="", headers=cache_headers)
-
     resolved_headers = {"content-type": "application/json; charset=utf-8", **cache_headers}
     _add_server_timing(resolved_headers, "api", started_at)
     return ResponseSpec(status=200, body=lookup.payload_json, headers=resolved_headers)
@@ -255,18 +262,24 @@ async def _handle_render_snapshot(snapshot_hash: str, request: RequestLike, env:
         if not read_decision.allowed:
             return html_response("<h1>429 Too Many Requests</h1>", status=429)
 
+    etag = build_etag("html", snapshot_hash)
+    if if_none_match_matches(request.headers.get("if-none-match"), etag):
+        expiry_lookup = await get_snapshot_expiry_by_hash(env, snapshot_hash)
+        if expiry_lookup.is_expired:
+            return html_response("<h1>410 Snapshot expired</h1>", status=410)
+        if expiry_lookup.expires_at is None:
+            return html_response("<h1>404 Snapshot not found</h1>", status=404)
+        cache_headers = _build_snapshot_cache_headers(expiry_lookup.expires_at, etag)
+        _add_server_timing(cache_headers, "html", started_at)
+        return ResponseSpec(status=304, body="", headers=cache_headers)
+
     lookup = await get_snapshot_by_hash(env, snapshot_hash)
     if lookup.is_expired:
         return html_response("<h1>410 Snapshot expired</h1>", status=410)
     if lookup.snapshot is None:
         return html_response("<h1>404 Snapshot not found</h1>", status=404)
 
-    etag = build_etag("html", lookup.snapshot.hash)
     cache_headers = _build_snapshot_cache_headers(lookup.snapshot.expires_at, etag)
-    if if_none_match_matches(request.headers.get("if-none-match"), etag):
-        _add_server_timing(cache_headers, "html", started_at)
-        return ResponseSpec(status=304, body="", headers=cache_headers)
-
     response = html_response(render_snapshot_html(lookup.snapshot), headers=cache_headers)
     _add_server_timing(response.headers, "html", started_at)
     return response
