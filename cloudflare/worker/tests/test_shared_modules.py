@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import date, datetime, timezone
 from typing import cast
 
@@ -21,6 +22,7 @@ from for_us_shared.models import (
     StoredSnapshot,
     model_to_json_dict,
     parse_create_snapshot_request_json,
+    parse_create_snapshot_request_json_trusted,
 )
 
 
@@ -139,6 +141,14 @@ def test_shared_models_validation_and_serialization() -> None:
 
     with pytest.raises(PydanticValidationError):
         CreateSnapshotResponse.parse_obj({"hash": "bad", "expiresAt": "2026-02-24T00:00:00Z"})
+    with pytest.raises(PydanticValidationError):
+        CreateSnapshotResponse.parse_obj(
+            {
+                "hash": "Abcd12345678",
+                "expiresAt": "2026-02-24T00:00:00Z",
+                "removeToken": "short",
+            }
+        )
 
     with pytest.raises(PydanticValidationError):
         RecommendationPayload.parse_obj({"videos": "not-a-list", "shorts": []})
@@ -154,6 +164,52 @@ def test_shared_models_validation_and_serialization() -> None:
     dumped = model_to_json_dict(parsed, by_alias=True, exclude_none=True)
     dumped_videos = cast(list[dict[str, object]], dumped["videos"])
     assert dumped_videos[0]["videoHash"] == "lzChIIJMpGk"
+
+
+def test_trusted_snapshot_parse_handles_legacy_and_partial_data() -> None:
+    raw_payload = (
+        '{"capturedAt":"2026-02-17T11:00:00Z","videos":['
+        '{"videoHash":"lzChIIJMpGk","title":"Video","viewCount":1234,"publishedAt":"2026-02-16T11:00:00Z"},'
+        '"dQw4w9WgXcQ",'
+        '{"videoHash":"bad","title":"invalid"},'
+        '{"videoHash":"lzChIIJMpGk","title":"duplicate"}'
+        '],"shorts":[{"videoHash":"YooEa0JVM_A","title":"Short","viewCount":55}]}'
+    )
+
+    trusted = parse_create_snapshot_request_json_trusted(raw_payload)
+    assert trusted.captured_at is not None
+    assert len(trusted.videos) == 2
+    assert trusted.videos[0].video_hash == "lzChIIJMpGk"
+    assert trusted.videos[0].published_at is not None
+    assert trusted.videos[1].video_hash == "dQw4w9WgXcQ"
+    assert len(trusted.shorts) == 1
+    assert trusted.shorts[0].view_count == 55
+
+
+def test_trusted_snapshot_parse_and_helper_edges() -> None:
+    with pytest.raises(ValueError):
+        parse_create_snapshot_request_json_trusted("[]")
+
+    untrusted = parse_create_snapshot_request_json_trusted(
+        '{"capturedAt":"","pageUrl":"","videos":"bad","shorts":[null,123,{"videoHash":123},'
+        '{"videoHash":"bad"},'
+        '{"videoHash":"lzChIIJMpGk","title":"","publishedAt":"not-a-date","viewCount":true},'
+        '{"videoHash":"dQw4w9WgXcQ","title":"ok","viewCount":-10}]}'
+    )
+    assert untrusted.captured_at is None
+    assert untrusted.page_url is None
+    assert untrusted.videos == []
+    assert len(untrusted.shorts) == 2
+    assert untrusted.shorts[0].title == "lzChIIJMpGk"
+    assert untrusted.shorts[0].published_at is None
+    assert untrusted.shorts[0].view_count is None
+    assert untrusted.shorts[1].view_count is None
+
+    large_items = [f"{index:011d}" for index in range(205)]
+    trimmed = parse_create_snapshot_request_json_trusted(
+        '{"videos":' + json.dumps(large_items) + ',"shorts":[]}'
+    )
+    assert len(trimmed.videos) == 200
 
 
 

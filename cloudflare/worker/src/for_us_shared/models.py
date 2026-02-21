@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 import json
 import re
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, TypeVar, cast
 
 if TYPE_CHECKING:
     from pydantic import AnyUrl, BaseModel, Field, validator
@@ -14,6 +14,8 @@ else:  # pragma: no cover - runtime import path differs between pydantic v1 and 
         from pydantic.v1 import AnyUrl, BaseModel, Field, validator
     except ImportError:  # pragma: no cover
         from pydantic import AnyUrl, BaseModel, Field, validator
+
+_BaseModelT = TypeVar("_BaseModelT", bound="BaseModel")
 
 _VIDEO_HASH_PATTERN = r"^[A-Za-z0-9_-]{11}$"
 _SNAPSHOT_HASH_PATTERN = r"^[A-Za-z0-9_-]{8,64}$"
@@ -140,6 +142,31 @@ def parse_create_snapshot_request_json(raw_json: str) -> CreateSnapshotRequest:
     return CreateSnapshotRequest.parse_raw(raw_json)
 
 
+def parse_create_snapshot_request_json_trusted(raw_json: str) -> CreateSnapshotRequest:
+    """Parse a previously validated snapshot payload quickly for read paths.
+
+    This intentionally skips schema validation to reduce CPU spent on reads.
+    Data written to storage is validated on ingest, so this parser assumes
+    persisted payloads follow the expected shape. Malformed entries are ignored.
+    """
+    raw_payload = json.loads(raw_json)
+    if not isinstance(raw_payload, dict):
+        raise ValueError("Stored snapshot payload has invalid format.")
+    payload_dict = cast(dict[str, object], raw_payload)
+
+    videos = _trusted_recommendation_items(payload_dict.get("videos"))
+    shorts = _trusted_recommendation_items(payload_dict.get("shorts"))
+    captured_at = _parse_iso_datetime(payload_dict.get("capturedAt"))
+    page_url = _optional_non_empty_string(payload_dict.get("pageUrl"))
+    return _model_construct(
+        CreateSnapshotRequest,
+        videos=videos,
+        shorts=shorts,
+        captured_at=captured_at,
+        page_url=page_url,
+    )
+
+
 def model_to_json_dict(
     model: BaseModel,
     *,
@@ -165,3 +192,99 @@ def model_to_json_string(
             sort_keys=sort_keys,
         )
     return model.json(by_alias=by_alias, exclude_none=exclude_none)
+
+
+def _model_construct(model_type: type[_BaseModelT], **values: object) -> _BaseModelT:
+    construct = getattr(model_type, "construct", None)
+    if callable(construct):
+        return cast(_BaseModelT, construct(**values))
+
+    model_construct = getattr(model_type, "model_construct", None)  # pragma: no cover
+    if callable(model_construct):  # pragma: no cover
+        return cast(_BaseModelT, model_construct(**values))  # pragma: no cover
+
+    raise RuntimeError(f"Unable to construct model for {model_type.__name__}.")  # pragma: no cover
+
+
+def _trusted_recommendation_items(raw_items: object) -> list[RecommendationItem]:
+    if not isinstance(raw_items, list):
+        return []
+
+    normalized_items: list[RecommendationItem] = []
+    seen_hashes: set[str] = set()
+    for raw_item in cast(list[object], raw_items):
+        item = _trusted_recommendation_item(raw_item)
+        if item is None:
+            continue
+        if item.video_hash in seen_hashes:
+            continue
+        seen_hashes.add(item.video_hash)
+        normalized_items.append(item)
+        if len(normalized_items) >= 200:
+            break
+    return normalized_items
+
+
+def _trusted_recommendation_item(raw_item: object) -> RecommendationItem | None:
+    if isinstance(raw_item, str):
+        if not re.fullmatch(_VIDEO_HASH_PATTERN, raw_item):
+            return None
+        return _model_construct(RecommendationItem, video_hash=raw_item, title=raw_item)
+
+    if not isinstance(raw_item, dict):
+        return None
+    item_dict = cast(dict[str, object], raw_item)
+
+    video_hash = item_dict.get("videoHash")
+    if not isinstance(video_hash, str):
+        return None
+    if not re.fullmatch(_VIDEO_HASH_PATTERN, video_hash):
+        return None
+
+    title = item_dict.get("title")
+    normalized_title = title if isinstance(title, str) and title.strip() else video_hash
+    channel_name = _optional_non_empty_string(item_dict.get("channelName"))
+    channel_link = _optional_non_empty_string(item_dict.get("channelLink"))
+    channel_avatar = _optional_non_empty_string(item_dict.get("channelAvatar"))
+    published_at = _parse_iso_datetime(item_dict.get("publishedAt"))
+    view_count = _parse_non_negative_int(item_dict.get("viewCount"))
+
+    return _model_construct(
+        RecommendationItem,
+        video_hash=video_hash,
+        title=normalized_title,
+        channel_name=channel_name,
+        channel_link=channel_link,
+        channel_avatar=channel_avatar,
+        published_at=published_at,
+        view_count=view_count,
+    )
+
+
+def _parse_iso_datetime(raw_value: object) -> datetime | None:
+    if not isinstance(raw_value, str):
+        return None
+    if not raw_value:
+        return None
+    try:
+        return datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _optional_non_empty_string(raw_value: object) -> str | None:
+    if not isinstance(raw_value, str):
+        return None
+    if not raw_value:
+        return None
+    return raw_value
+
+
+def _parse_non_negative_int(raw_value: object) -> int | None:
+    if not isinstance(raw_value, int):
+        return None
+    if isinstance(raw_value, bool):
+        return None
+    if raw_value < 0:
+        return None
+    return raw_value

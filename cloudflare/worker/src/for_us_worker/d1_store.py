@@ -14,7 +14,7 @@ from for_us_shared.models import (
     CreateSnapshotRequest,
     StoredSnapshot,
     model_to_json_string,
-    parse_create_snapshot_request_json,
+    parse_create_snapshot_request_json_trusted,
 )
 
 from for_us_worker.types import WorkerEnv
@@ -119,7 +119,7 @@ async def get_snapshot_by_hash(
 
     created_at = _parse_datetime(_require_str(mapping, "created_at"))
     expires_at = _parse_datetime(_require_str(mapping, "expires_at"))
-    payload = parse_create_snapshot_request_json(_require_str(mapping, "payload_json"))
+    payload = parse_create_snapshot_request_json_trusted(_require_str(mapping, "payload_json"))
 
     snapshot = StoredSnapshot(
         hash=_require_str(mapping, "hash"),
