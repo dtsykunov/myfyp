@@ -13,6 +13,17 @@ from for_us_shared.formatting import (
 )
 from for_us_shared.models import RecommendationItem, StoredSnapshot
 
+_ICON_LINK_TAGS = """
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+""".strip()
+
 
 def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
     escaped_userscript_url = html.escape(userscript_url)
@@ -79,14 +90,7 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <meta name="theme-color" content="#0f0f0f">
     <meta name="application-name" content="myfyp">
-    <link rel="icon" href="/favicon.ico" sizes="any">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+    {_ICON_LINK_TAGS}
     <link rel="canonical" href="{escaped_home_url}">
     <meta property="og:type" content="website">
     <meta property="og:locale" content="en_US">
@@ -474,19 +478,12 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
 
 
 def render_privacy_html() -> str:
-    return """<!doctype html>
+    template = """<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="/favicon.ico" sizes="any">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+    {_ICON_LINK_TAGS}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
@@ -646,6 +643,7 @@ def render_privacy_html() -> str:
   </body>
 </html>
 """
+    return template.replace("{_ICON_LINK_TAGS}", _ICON_LINK_TAGS)
 
 
 def render_snapshot_html(snapshot: StoredSnapshot) -> str:
@@ -666,14 +664,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     <meta name="description" content="{escaped_snapshot_seo_description}">
     <meta name="robots" content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <meta name="theme-color" content="#0f0f0f">
-    <link rel="icon" href="/favicon.ico" sizes="any">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+    {_ICON_LINK_TAGS}
     <link rel="preconnect" href="https://i.ytimg.com" crossorigin>
     <link rel="preconnect" href="https://yt3.ggpht.com" crossorigin>
     <link rel="dns-prefetch" href="//i.ytimg.com">

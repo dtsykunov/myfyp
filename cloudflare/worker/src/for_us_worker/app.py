@@ -162,18 +162,27 @@ async def handle_scheduled(env: WorkerEnv) -> None:
 
 async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> ResponseSpec:
     started_at = perf_counter()
+    phases: list[tuple[str, float]] = []
     if _is_abuse_limiting_enabled(env):
+        abuse_started_at = perf_counter()
         create_decision = await allow_snapshot_create(
             env=env,
             client_ip=_client_ip(request),
             config=_ABUSE_CONFIG,
         )
+        _record_metric(phases, "abuse", abuse_started_at)
         if not create_decision.allowed:
             return json_response({"detail": create_decision.reason}, status=429)
 
+    read_body_started_at = perf_counter()
     body_text = await _read_body_with_limit(request, _MAX_BODY_BYTES)
+    _record_metric(phases, "read_body", read_body_started_at)
+    parse_started_at = perf_counter()
     payload = parse_create_snapshot_request_json(body_text)
+    _record_metric(phases, "parse", parse_started_at)
+    store_started_at = perf_counter()
     stored_snapshot = await create_snapshot(env, payload)
+    _record_metric(phases, "store", store_started_at)
     base_url = _base_url(request)
     snapshot_url = f"{base_url}/{stored_snapshot.hash}"
     remove_url = f"{base_url}/api/snapshots/{stored_snapshot.hash}/remove/{stored_snapshot.delete_token}"
@@ -189,7 +198,7 @@ async def _handle_create_snapshot(request: RequestLike, env: WorkerEnv) -> Respo
         by_alias=True,
     )
     response = json_response(response_payload, status=201)
-    _add_server_timing(response.headers, "create", started_at)
+    _add_server_timing(response.headers, "create", started_at, phases)
     return response
 
 
@@ -217,27 +226,34 @@ async def _handle_remove_snapshot(
 
 async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_hash: str) -> ResponseSpec:
     started_at = perf_counter()
+    phases: list[tuple[str, float]] = []
     if _is_abuse_limiting_enabled(env):
+        abuse_started_at = perf_counter()
         read_decision = await allow_snapshot_read(
             env=env,
             client_ip=_client_ip(request),
             config=_ABUSE_CONFIG,
         )
+        _record_metric(phases, "abuse", abuse_started_at)
         if not read_decision.allowed:
             return json_response({"detail": read_decision.reason}, status=429)
 
     etag = build_etag("api", snapshot_hash)
     if if_none_match_matches(request.headers.get("if-none-match"), etag):
+        lookup_started_at = perf_counter()
         expiry_lookup = await get_snapshot_expiry_by_hash(env, snapshot_hash)
+        _record_metric(phases, "lookup_expiry", lookup_started_at)
         if expiry_lookup.is_expired:
             return json_response({"detail": "Snapshot has expired."}, status=410)
         if expiry_lookup.expires_at is None:
             return json_response({"detail": "Snapshot not found."}, status=404)
         cache_headers = _build_snapshot_cache_headers(expiry_lookup.expires_at, etag)
-        _add_server_timing(cache_headers, "api", started_at)
+        _add_server_timing(cache_headers, "api", started_at, phases)
         return ResponseSpec(status=304, body="", headers=cache_headers)
 
+    lookup_started_at = perf_counter()
     lookup = await get_snapshot_payload_json_by_hash(env, snapshot_hash)
+    _record_metric(phases, "lookup_payload", lookup_started_at)
     if lookup.is_expired:
         return json_response({"detail": "Snapshot has expired."}, status=410)
     if lookup.payload_json is None:
@@ -247,41 +263,51 @@ async def _handle_get_snapshot(request: RequestLike, env: WorkerEnv, snapshot_ha
 
     cache_headers = _build_snapshot_cache_headers(lookup.expires_at, etag)
     resolved_headers = {"content-type": "application/json; charset=utf-8", **cache_headers}
-    _add_server_timing(resolved_headers, "api", started_at)
+    _add_server_timing(resolved_headers, "api", started_at, phases)
     return ResponseSpec(status=200, body=lookup.payload_json, headers=resolved_headers)
 
 
 async def _handle_render_snapshot(snapshot_hash: str, request: RequestLike, env: WorkerEnv) -> ResponseSpec:
     started_at = perf_counter()
+    phases: list[tuple[str, float]] = []
     if _is_abuse_limiting_enabled(env):
+        abuse_started_at = perf_counter()
         read_decision = await allow_snapshot_read(
             env=env,
             client_ip=_client_ip(request),
             config=_ABUSE_CONFIG,
         )
+        _record_metric(phases, "abuse", abuse_started_at)
         if not read_decision.allowed:
             return html_response("<h1>429 Too Many Requests</h1>", status=429)
 
     etag = build_etag("html", snapshot_hash)
     if if_none_match_matches(request.headers.get("if-none-match"), etag):
+        lookup_started_at = perf_counter()
         expiry_lookup = await get_snapshot_expiry_by_hash(env, snapshot_hash)
+        _record_metric(phases, "lookup_expiry", lookup_started_at)
         if expiry_lookup.is_expired:
             return html_response("<h1>410 Snapshot expired</h1>", status=410)
         if expiry_lookup.expires_at is None:
             return html_response("<h1>404 Snapshot not found</h1>", status=404)
         cache_headers = _build_snapshot_cache_headers(expiry_lookup.expires_at, etag)
-        _add_server_timing(cache_headers, "html", started_at)
+        _add_server_timing(cache_headers, "html", started_at, phases)
         return ResponseSpec(status=304, body="", headers=cache_headers)
 
+    lookup_started_at = perf_counter()
     lookup = await get_snapshot_by_hash(env, snapshot_hash)
+    _record_metric(phases, "lookup_snapshot", lookup_started_at)
     if lookup.is_expired:
         return html_response("<h1>410 Snapshot expired</h1>", status=410)
     if lookup.snapshot is None:
         return html_response("<h1>404 Snapshot not found</h1>", status=404)
 
+    render_started_at = perf_counter()
+    rendered_html = render_snapshot_html(lookup.snapshot)
+    _record_metric(phases, "render", render_started_at)
     cache_headers = _build_snapshot_cache_headers(lookup.snapshot.expires_at, etag)
-    response = html_response(render_snapshot_html(lookup.snapshot), headers=cache_headers)
-    _add_server_timing(response.headers, "html", started_at)
+    response = html_response(rendered_html, headers=cache_headers)
+    _add_server_timing(response.headers, "html", started_at, phases)
     return response
 
 
@@ -363,6 +389,20 @@ def _build_snapshot_cache_headers(expires_at: datetime, etag: str) -> dict[str, 
     return headers
 
 
-def _add_server_timing(headers: dict[str, str], metric_name: str, started_at: float) -> None:
+def _record_metric(metrics: list[tuple[str, float]], metric_name: str, started_at: float) -> None:
     duration_ms = (perf_counter() - started_at) * 1000.0
-    headers["Server-Timing"] = f'{metric_name};dur={duration_ms:.2f}'
+    metrics.append((metric_name, duration_ms))
+
+
+def _add_server_timing(
+    headers: dict[str, str],
+    metric_name: str,
+    started_at: float,
+    phase_metrics: list[tuple[str, float]] | None = None,
+) -> None:
+    entries: list[str] = []
+    if phase_metrics:
+        entries.extend(f"{phase_name};dur={phase_duration:.2f}" for phase_name, phase_duration in phase_metrics)
+    duration_ms = (perf_counter() - started_at) * 1000.0
+    entries.append(f"{metric_name};dur={duration_ms:.2f}")
+    headers["Server-Timing"] = ", ".join(entries)
