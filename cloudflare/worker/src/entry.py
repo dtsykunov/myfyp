@@ -34,4 +34,5 @@ class Default(WorkersEntrypoint):
 
     async def scheduled(self, controller: Any, env: Any, ctx: Any) -> None:
         del controller, ctx
-        await handle_scheduled(env)
+        resolved_env = env if env is not None else self.env
+        await handle_scheduled(resolved_env)
