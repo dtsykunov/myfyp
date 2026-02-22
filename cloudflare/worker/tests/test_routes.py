@@ -36,7 +36,7 @@ def test_root_route_renders_installation_page() -> None:
     assert '<img src="/favicon.svg" alt="">' in response.body
     assert 'href="/"' in response.body
     assert "https://raw.githubusercontent.com/dtsykunov/myfyp/master/extension/userscript/myfyp.user.js" in response.body
-    assert "https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-firefox-latest.xpi" in response.body
+    assert "https://addons.mozilla.org/en-US/firefox/addon/myfyp/" in response.body
     assert 'href="https://github.com/dtsykunov/myfyp/releases/download/extensions-latest/myfyp-chrome-latest.zip"' in response.body
     assert 'href="https://www.tampermonkey.net/"' in response.body
     assert 'href="/privacy"' in response.body

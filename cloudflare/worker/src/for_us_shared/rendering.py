@@ -32,10 +32,7 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
         "extensions-latest/myfyp-chrome-latest.zip"
     )
     escaped_chrome_extension_url = html.escape(chrome_extension_url)
-    firefox_extension_url = (
-        "https://github.com/dtsykunov/myfyp/releases/download/"
-        "extensions-latest/myfyp-firefox-latest.xpi"
-    )
+    firefox_extension_url = "https://addons.mozilla.org/en-US/firefox/addon/myfyp/"
     escaped_firefox_extension_url = html.escape(firefox_extension_url)
     home_url = site_url or "/"
     if not site_url:
@@ -424,8 +421,9 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
           <h2 class="section-title">Install and Use</h2>
           <h3 class="install-subtitle">Option 1: Firefox Extension</h3>
           <ol class="steps">
-            <li>Open the stable <a class="userscript-link" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">install link</a>.</li>
-            <li>Confirm the Firefox install prompt.</li>
+            <li>Open the official <a class="userscript-link" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">Firefox Add-ons page</a>.</li>
+            <li>Click <code>Add to Firefox</code> and confirm the install prompt.</li>
+            <li>(Optional) Pin the extension in Firefox toolbar for quick access.</li>
             <li>Open <a class="userscript-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube Home</a>, open the extension popup, and click <code>Upload Snapshot</code>.</li>
           </ol>
           <h3 class="install-subtitle">Option 2: Chrome Extension (Manual setup)</h3>
