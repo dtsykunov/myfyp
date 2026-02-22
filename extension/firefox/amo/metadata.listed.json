@@ -20,7 +20,6 @@
   "tags": [
     "youtube"
   ],
-  "contributions_url": "https://github.com/dtsykunov/myfyp",
   "requires_payment": false,
   "homepage": {
     "en-US": "https://myfyp.link/"
@@ -39,7 +38,7 @@
     "approval_notes": "The extension runs only on YouTube Home and requires explicit user action to upload a snapshot to myfyp.link.",
     "compatibility": {
       "firefox": {
-        "min": "128.0",
+        "min": "142.0",
         "max": "*"
       }
     }
