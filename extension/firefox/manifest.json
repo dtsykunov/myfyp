@@ -3,7 +3,7 @@
   "name": "myfyp — share your 'For You' page",
   "short_name": "myfyp",
   "description": "Share your personal YouTube recommendation feed snapshot with a temporary myfyp link.",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "homepage_url": "https://myfyp.link",
   "icons": {
     "16": "icons/icon-16.png",
@@ -21,7 +21,8 @@
           "websiteContent"
         ]
       }
-    }
+    },
+    "gecko_android": {}
   },
   "browser_action": {
     "default_title": "myfyp — share your 'For You' page",

@@ -6,6 +6,7 @@ Firefox WebExtension that mirrors the userscript behavior:
 - No automatic upload on page load.
 - Built-in link history with share/delete/remove controls.
 - Declares `websiteContent` data collection in Firefox manifest consent metadata.
+- Declares Firefox Android compatibility in manifest (`gecko_android`).
 
 ## Load temporary add-on (local)
 
