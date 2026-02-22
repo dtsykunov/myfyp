@@ -4,13 +4,13 @@
     "en-US": "myfyp - share your 'For You' page"
   },
   "summary": {
-    "en-US": "Capture and share your personal YouTube recommendation feed snapshot with temporary links."
+    "en-US": "Capture and share your personal YouTube Home recommendations with a temporary link."
   },
   "description": {
-    "en-US": "myfyp lets you capture your personal YouTube homepage recommendations and share them with a temporary link that expires automatically."
+    "en-US": "Open YouTube Home, click Upload Snapshot, and the extension captures loaded video and Shorts cards. It uploads parsed metadata to myfyp.link and returns a temporary share link."
   },
   "developer_comments": {
-    "en-US": "myfyp.link lets you manually capture a snapshot of your YouTube Home recommendations and share it with a temporary link. Open YouTube Home, click Upload Snapshot, and the extension parses visible video/Short cards, uploads metadata to myfyp.link, and returns share and delete links."
+    "en-US": "The extension runs only on YouTube Home and uploads data only after explicit user action. The popup shows link history with share and delete links. Users can delete a snapshot immediately, and snapshots expire automatically after 7 days."
   },
   "categories": {
     "firefox": [
@@ -18,7 +18,8 @@
     ]
   },
   "tags": [
-    "youtube"
+    "youtube",
+    "social media"
   ],
   "requires_payment": false,
   "homepage": {
