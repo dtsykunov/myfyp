@@ -33,10 +33,6 @@
   },
   "version": {
     "license": "MIT",
-    "release_notes": {
-      "en-US": "Stability and UX improvements for snapshot sharing."
-    },
-    "approval_notes": "The extension runs only on YouTube Home and requires explicit user action to upload a snapshot to myfyp.link.",
     "compatibility": {
       "firefox": {
         "min": "142.0",
