@@ -366,6 +366,9 @@ function isReceivingEndMissingError(error) {
 }
 
 async function createContextMenus() {
+  if (!chrome.contextMenus || typeof chrome.contextMenus.create !== "function") {
+    return;
+  }
   await removeAllContextMenus();
   chrome.contextMenus.create({
     id: MENU_UPLOAD,
@@ -378,11 +381,13 @@ chrome.runtime.onInstalled.addListener(() => {
   void createContextMenus();
 });
 
-chrome.contextMenus.onClicked.addListener((info) => {
-  if (info.menuItemId === MENU_UPLOAD) {
-    void executeInActiveTab("upload");
-  }
-});
+if (chrome.contextMenus && chrome.contextMenus.onClicked) {
+  chrome.contextMenus.onClicked.addListener((info) => {
+    if (info.menuItemId === MENU_UPLOAD) {
+      void executeInActiveTab("upload");
+    }
+  });
+}
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   void (async () => {
