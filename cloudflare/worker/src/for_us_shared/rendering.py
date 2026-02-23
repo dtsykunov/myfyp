@@ -27,10 +27,7 @@ _ICON_LINK_TAGS = """
 
 def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
     escaped_userscript_url = html.escape(userscript_url)
-    chrome_extension_url = (
-        "https://github.com/dtsykunov/myfyp/releases/download/"
-        "extensions-latest/myfyp-chrome-latest.zip"
-    )
+    chrome_extension_url = "https://chromewebstore.google.com/detail/knjonkdgfkiogiajfcndhfndbajckgei"
     escaped_chrome_extension_url = html.escape(chrome_extension_url)
     firefox_extension_url = "https://addons.mozilla.org/en-US/firefox/addon/myfyp/"
     escaped_firefox_extension_url = html.escape(firefox_extension_url)
@@ -410,7 +407,7 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
         </p>
         <div class="hero-actions">
           <a class="button-link button-muted" href="{escaped_firefox_extension_url}" target="_blank" rel="noopener noreferrer">Install Firefox Extension</a>
-          <a class="button-link button-muted" href="{escaped_chrome_extension_url}" target="_blank" rel="noopener noreferrer">Install Chrome Extension (Manual)</a>
+          <a class="button-link button-muted" href="{escaped_chrome_extension_url}" target="_blank" rel="noopener noreferrer">Install Chrome Extension</a>
           <a class="button-link button-primary userscript-link" href="{escaped_userscript_url}">Install Userscript</a>
           <a class="button-link button-muted" href="/privacy">Review Privacy Notice</a>
         </div>
@@ -426,12 +423,11 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
             <li>(Optional) Pin the extension in Firefox toolbar for quick access.</li>
             <li>Open <a class="userscript-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube Home</a>, open the extension popup, and click <code>Upload Snapshot</code>.</li>
           </ol>
-          <h3 class="install-subtitle">Option 2: Chrome Extension (Manual setup)</h3>
+          <h3 class="install-subtitle">Option 2: Chrome Extension</h3>
           <ol class="steps">
-            <li>Download the stable package <a class="userscript-link" href="{escaped_chrome_extension_url}" target="_blank" rel="noopener noreferrer">myfyp-chrome-latest.zip</a>.</li>
-            <li>Unzip <code>myfyp-chrome-latest.zip</code>.</li>
-            <li>Open <code>chrome://extensions</code> and enable <code>Developer mode</code>.</li>
-            <li>Click <code>Load unpacked</code> and select the unzipped extension folder.</li>
+            <li>Open the official <a class="userscript-link" href="{escaped_chrome_extension_url}" target="_blank" rel="noopener noreferrer">Chrome Web Store page</a>.</li>
+            <li>Click <code>Add to Chrome</code> and confirm the install prompt.</li>
+            <li>(Optional) Pin the extension in your browser toolbar for quick access.</li>
             <li>Open <a class="userscript-link" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube Home</a>, open the extension popup, and click <code>Upload Snapshot</code>.</li>
           </ol>
           <h3 class="install-subtitle">Option 3: Userscript</h3>
