@@ -111,6 +111,7 @@ Create response example:
 
 - Snapshot retention: 7 days.
 - Expired snapshots are deleted automatically.
+- Snapshot pages and snapshot JSON use short edge caching (`s-maxage=60`) to reduce render/DB load under traffic bursts.
 
 Default limits:
 - max `videos`: 200
