@@ -9,6 +9,11 @@ from for_us_worker.app import handle_fetch
 
 from .helpers import FakeEnv, FakeRequest
 
+_ICON_CDN_BASE_URL = (
+    "https://media.githubusercontent.com/media/"
+    "dtsykunov/myfyp/refs/heads/master/brand/icons/web"
+)
+
 
 T = TypeVar("T")
 
@@ -32,8 +37,8 @@ def test_root_route_renders_installation_page() -> None:
     assert 'myfyp means "my for you page"' in response.body
     assert "share recommendation page" in response.body.lower()
     assert "Install and Use" in response.body
-    assert 'href="/favicon.svg"' in response.body
-    assert '<img src="/favicon.svg" alt="">' in response.body
+    assert f'href="{_ICON_CDN_BASE_URL}/favicon.svg"' in response.body
+    assert f'<img src="{_ICON_CDN_BASE_URL}/favicon.svg" alt="">' in response.body
     assert 'href="/"' in response.body
     assert "https://raw.githubusercontent.com/dtsykunov/myfyp/master/extension/userscript/myfyp.user.js" in response.body
     assert "https://addons.mozilla.org/en-US/firefox/addon/myfyp/" in response.body
@@ -48,8 +53,8 @@ def test_privacy_route_renders_privacy_page() -> None:
     assert response.headers["Cache-Control"].startswith("public, max-age=3600")
     assert response.headers["ETag"] == '"static-privacy"'
     assert "Privacy Notice" in response.body
-    assert 'href="/favicon.svg"' in response.body
-    assert '<img src="/favicon.svg" alt="">' in response.body
+    assert f'href="{_ICON_CDN_BASE_URL}/favicon.svg"' in response.body
+    assert f'<img src="{_ICON_CDN_BASE_URL}/favicon.svg" alt="">' in response.body
     assert 'href="/"' in response.body
     assert "Snapshots are automatically deleted after 7 days." in response.body
     assert 'href="/privacy"' in response.body
@@ -230,8 +235,8 @@ def test_render_hash_route() -> None:
     assert "lookup_snapshot;dur=" in page_response.headers["Server-Timing"]
     assert page_response.headers["Cache-Control"] == "public, no-cache, max-age=0, must-revalidate"
     assert "myfyp by" in page_response.body
-    assert 'href="/favicon.svg"' in page_response.body
-    assert '<img src="/favicon.svg" alt="">' in page_response.body
+    assert f'href="{_ICON_CDN_BASE_URL}/favicon.svg"' in page_response.body
+    assert f'<img src="{_ICON_CDN_BASE_URL}/favicon.svg" alt="">' in page_response.body
     assert 'content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"' in page_response.body
 
 

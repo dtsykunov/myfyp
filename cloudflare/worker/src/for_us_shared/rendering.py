@@ -13,16 +13,21 @@ from for_us_shared.formatting import (
 )
 from for_us_shared.models import RecommendationItem, StoredSnapshot
 
-_ICON_LINK_TAGS = """
-    <link rel="icon" href="/favicon.ico" sizes="any">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+_ICON_CDN_BASE_URL = (
+    "https://media.githubusercontent.com/media/"
+    "dtsykunov/myfyp/refs/heads/master/brand/icons/web"
+)
+_ICON_LINK_TAGS = f"""
+    <link rel="icon" href="{_ICON_CDN_BASE_URL}/favicon.ico" sizes="any">
+    <link rel="icon" type="image/svg+xml" href="{_ICON_CDN_BASE_URL}/favicon.svg">
+    <link rel="icon" type="image/png" sizes="16x16" href="{_ICON_CDN_BASE_URL}/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{_ICON_CDN_BASE_URL}/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="{_ICON_CDN_BASE_URL}/favicon-48x48.png">
+    <link rel="apple-touch-icon" href="{_ICON_CDN_BASE_URL}/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="{_ICON_CDN_BASE_URL}/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="{_ICON_CDN_BASE_URL}/android-chrome-512x512.png">
 """.strip()
+_BRAND_LOGO_URL = f"{_ICON_CDN_BASE_URL}/favicon.svg"
 
 
 def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
@@ -74,6 +79,7 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
     escaped_seo_title = html.escape(seo_title)
     escaped_seo_description = html.escape(seo_description)
     escaped_seo_keywords = html.escape(seo_keywords)
+    escaped_brand_logo_url = html.escape(_BRAND_LOGO_URL)
     return f"""<!doctype html>
 <html lang="en">
   <head>
@@ -383,7 +389,7 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
       <header class="top-header">
         <a class="brand-logo-link" href="/" aria-label="Open homepage">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg" alt="">
+            <img src="{escaped_brand_logo_url}" alt="">
           </span>
         </a>
         <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
@@ -588,7 +594,7 @@ def render_privacy_html() -> str:
       <header class="top-header">
         <a class="brand-logo-link" href="/" aria-label="Open homepage">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg" alt="">
+            <img src="{_BRAND_LOGO_URL}" alt="">
           </span>
         </a>
         <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
@@ -626,7 +632,7 @@ def render_privacy_html() -> str:
   </body>
 </html>
 """
-    return template.replace("{_ICON_LINK_TAGS}", _ICON_LINK_TAGS)
+    return template.replace("{_ICON_LINK_TAGS}", _ICON_LINK_TAGS).replace("{_BRAND_LOGO_URL}", _BRAND_LOGO_URL)
 
 
 def render_snapshot_html(snapshot: StoredSnapshot) -> str:
@@ -635,6 +641,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     shorts = _render_shorts_grid(snapshot.payload.shorts, metadata_reference_time)
     escaped_hash = html.escape(snapshot.hash)
     escaped_taken_at = html.escape(_format_snapshot_taken_at(metadata_reference_time))
+    escaped_brand_logo_url = html.escape(_BRAND_LOGO_URL)
     snapshot_seo_description = (
         "Shared personal YouTube recommendation page snapshot from myfyp (my for you page)."
     )
@@ -1068,7 +1075,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
       <header class="top-header">
         <a class="brand-logo-link" href="/" aria-label="Open homepage">
           <span class="brand-logo" aria-hidden="true">
-            <img src="/favicon.svg" alt="">
+            <img src="{escaped_brand_logo_url}" alt="">
           </span>
         </a>
         <h1>myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
