@@ -334,13 +334,6 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
         white-space: nowrap;
       }}
 
-      .note {{
-        margin-top: 12px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.45;
-      }}
-
       .privacy-footer {{
         margin-top: 18px;
         text-align: center;
@@ -446,10 +439,6 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
           </p>
           <div class="code-block">window.myfyp.uploadLatestSnapshot()</div>
           <div class="code-block">window.myfyp.showLinkHistory()</div>
-          <p class="note">
-            Advanced: set a custom API endpoint via
-            <code>window.myfyp.setApiBaseUrl("http://127.0.0.1:8787")</code>.
-          </p>
         </article>
       </section>
 
