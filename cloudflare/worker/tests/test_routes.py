@@ -168,7 +168,7 @@ def test_create_and_get_snapshot_routes() -> None:
     assert get_response.status == 200
     assert "api;dur=" in get_response.headers["Server-Timing"]
     assert "lookup_payload;dur=" in get_response.headers["Server-Timing"]
-    assert get_response.headers["Cache-Control"] == "public, no-cache, max-age=0, must-revalidate"
+    assert get_response.headers["Cache-Control"] == "public, max-age=0, s-maxage=60, stale-while-revalidate=120"
     payload = json.loads(get_response.body)
     assert payload["videos"][0]["videoHash"] == "lzChIIJMpGk"
 
@@ -233,7 +233,7 @@ def test_render_hash_route() -> None:
     assert page_response.status == 200
     assert "html;dur=" in page_response.headers["Server-Timing"]
     assert "lookup_snapshot;dur=" in page_response.headers["Server-Timing"]
-    assert page_response.headers["Cache-Control"] == "public, no-cache, max-age=0, must-revalidate"
+    assert page_response.headers["Cache-Control"] == "public, max-age=0, s-maxage=60, stale-while-revalidate=120"
     assert "myfyp by" in page_response.body
     assert f'href="{_ICON_CDN_BASE_URL}/favicon.svg"' in page_response.body
     assert f'<img src="{_ICON_CDN_BASE_URL}/favicon.svg" alt="">' in page_response.body

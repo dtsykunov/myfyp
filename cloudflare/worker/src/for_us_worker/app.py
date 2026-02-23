@@ -40,6 +40,8 @@ _MAX_BODY_BYTES = 64 * 1024
 _SNAPSHOT_HASH_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 _REMOVE_TOKEN_PATTERN = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
 _STATIC_PAGE_CACHE_SECONDS = 3600
+_SNAPSHOT_EDGE_CACHE_SECONDS = 60
+_SNAPSHOT_EDGE_STALE_WHILE_REVALIDATE_SECONDS = 120
 _ABUSE_CONFIG = AbuseConfig()
 _USERSCRIPT_REDIRECT_URL = (
     "https://raw.githubusercontent.com/"
@@ -383,9 +385,13 @@ def _build_static_cache_headers(etag: str) -> dict[str, str]:
 
 def _build_snapshot_cache_headers(expires_at: datetime, etag: str) -> dict[str, str]:
     headers = build_cache_headers(expires_at, etag)
-    # Snapshot links can be deleted before TTL expiry, so force revalidation
-    # to avoid serving stale cached pages after user-triggered deletion.
-    headers["Cache-Control"] = "public, no-cache, max-age=0, must-revalidate"
+    # Keep browsers revalidating, but allow a short edge cache window to reduce
+    # repeated render/DB load under burst traffic on Cloudflare Free.
+    headers["Cache-Control"] = (
+        "public, max-age=0, "
+        f"s-maxage={_SNAPSHOT_EDGE_CACHE_SECONDS}, "
+        f"stale-while-revalidate={_SNAPSHOT_EDGE_STALE_WHILE_REVALIDATE_SECONDS}"
+    )
     return headers
 
 
