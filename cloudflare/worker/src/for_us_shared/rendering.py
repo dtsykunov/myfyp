@@ -28,6 +28,7 @@ _ICON_LINK_TAGS = f"""
     <link rel="icon" type="image/png" sizes="512x512" href="{_ICON_CDN_BASE_URL}/android-chrome-512x512.png">
 """.strip()
 _BRAND_LOGO_URL = f"{_ICON_CDN_BASE_URL}/favicon.svg"
+_SOURCE_URL = "https://github.com/dtsykunov/myfyp"
 
 
 def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
@@ -371,6 +372,12 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
         text-decoration: underline;
       }}
 
+      .privacy-sep {{
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 4px;
+      }}
+
       @media (max-width: 960px) {{
         .install-card,
         .console-card {{
@@ -454,6 +461,8 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
 
       <footer class="privacy-footer">
         <a class="privacy-link" href="/privacy">Privacy Notice</a>
+        <span class="privacy-sep">·</span>
+        <a class="privacy-link" href="{_SOURCE_URL}" target="_blank" rel="noopener noreferrer">Source Code</a>
       </footer>
     </main>
   </body>
@@ -572,6 +581,12 @@ def render_privacy_html() -> str:
         color: var(--accent);
       }
 
+      .privacy-sep {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 4px;
+      }
+
       .muted {
         margin-top: 12px;
         color: var(--muted);
@@ -622,12 +637,18 @@ def render_privacy_html() -> str:
       <p class="muted">Last updated: February 18, 2026</p>
       <footer class="privacy-footer">
         <a class="privacy-link" href="/privacy">Privacy Notice</a>
+        <span class="privacy-sep">·</span>
+        <a class="privacy-link" href="{_SOURCE_URL}" target="_blank" rel="noopener noreferrer">Source Code</a>
       </footer>
     </main>
   </body>
 </html>
 """
-    return template.replace("{_ICON_LINK_TAGS}", _ICON_LINK_TAGS).replace("{_BRAND_LOGO_URL}", _BRAND_LOGO_URL)
+    return (
+        template.replace("{_ICON_LINK_TAGS}", _ICON_LINK_TAGS)
+        .replace("{_BRAND_LOGO_URL}", _BRAND_LOGO_URL)
+        .replace("{_SOURCE_URL}", _SOURCE_URL)
+    )
 
 
 def render_snapshot_html(snapshot: StoredSnapshot) -> str:
@@ -996,6 +1017,12 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
         text-decoration: underline;
       }}
 
+      .privacy-sep {{
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 4px;
+      }}
+
       @media (max-width: 2280px) {{
         .videos-grid {{
           grid-template-columns: repeat(5, 365px);
@@ -1103,6 +1130,8 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
           <p class="faq-answer">To quickly share and compare what YouTube was recommending to someone without requiring account access.</p>
         </section>
         <a class="privacy-link" href="/privacy">Privacy Notice</a>
+        <span class="privacy-sep">·</span>
+        <a class="privacy-link" href="{_SOURCE_URL}" target="_blank" rel="noopener noreferrer">Source Code</a>
       </footer>
     </main>
   </body>

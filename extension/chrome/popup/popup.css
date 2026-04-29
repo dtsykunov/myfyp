@@ -165,3 +165,18 @@ body {
 .status.success {
   color: #9fd4a9;
 }
+
+.popup-footer {
+  margin-top: 6px;
+  text-align: center;
+}
+
+.footer-link {
+  color: var(--accent);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  text-decoration: underline;
+}
