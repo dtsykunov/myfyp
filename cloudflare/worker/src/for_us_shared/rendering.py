@@ -67,11 +67,6 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
             "url": schema_home_url,
             "description": seo_description,
             "keywords": seo_keywords,
-            "creator": {
-                "@type": "Person",
-                "name": "dtsykunov",
-                "url": "https://dtsykunov.com/",
-            },
         },
         separators=(",", ":"),
     )
@@ -392,7 +387,7 @@ def render_home_html(userscript_url: str, site_url: str | None = None) -> str:
             <img src="{escaped_brand_logo_url}" alt="">
           </span>
         </a>
-        <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+        <h1 class="brand-title">myfyp</h1>
       </header>
 
       <section class="card hero">
@@ -597,7 +592,7 @@ def render_privacy_html() -> str:
             <img src="{_BRAND_LOGO_URL}" alt="">
           </span>
         </a>
-        <h1 class="brand-title">myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+        <h1 class="brand-title">myfyp</h1>
       </header>
 
       <section class="notice">
@@ -659,7 +654,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
     <link rel="preconnect" href="https://yt3.ggpht.com" crossorigin>
     <link rel="dns-prefetch" href="//i.ytimg.com">
     <link rel="dns-prefetch" href="//yt3.ggpht.com">
-    <title>myfyp by dtsykunov - {escaped_hash}</title>
+    <title>myfyp - {escaped_hash}</title>
     <style>
       :root {{
         --bg: #0f0f0f;
@@ -1078,7 +1073,7 @@ def render_snapshot_html(snapshot: StoredSnapshot) -> str:
             <img src="{escaped_brand_logo_url}" alt="">
           </span>
         </a>
-        <h1>myfyp by <a class="title-link" href="https://dtsykunov.com/" target="_blank" rel="noopener noreferrer">dtsykunov</a></h1>
+        <h1>myfyp</h1>
       </header>
       <div class="meta-stack">
         <p class="page-description">Snapshot of a personal YouTube recommendations page captured at a specific moment in time.</p>

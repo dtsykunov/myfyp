@@ -274,7 +274,7 @@ def test_shared_rendering_helper_branches() -> None:
         payload=_sample_payload(),
     )
     rendered = rendering.render_snapshot_html(snapshot)
-    assert "myfyp by" in rendered
+    assert "<h1>myfyp</h1>" in rendered
     assert 'content="noindex,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"' in rendered
     assert f'href="{_ICON_CDN_BASE_URL}/favicon.svg"' in rendered
     assert f'<img src="{_ICON_CDN_BASE_URL}/favicon.svg" alt="">' in rendered
